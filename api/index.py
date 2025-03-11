@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for
+import os
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///finances.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
 # Database model for transactions
@@ -41,9 +44,7 @@ def delete_transaction(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-# Vercel compatibility
-from flask import jsonify
-
+# API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
     transactions = Transaction.query.order_by(Transaction.date.desc()).all()
@@ -52,10 +53,6 @@ def get_transactions():
         'amount': t.amount, 'type': t.type
     } for t in transactions]
     return jsonify(transactions_list)
-
-# Entry point for Vercel
-def handler(event, context):
-    return app(event, context)
 
 if __name__ == '__main__':
     with app.app_context():
