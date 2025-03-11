@@ -6,7 +6,7 @@ from flask.cli import with_appcontext
 import click
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '') + "?sslmode=require"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -60,10 +60,13 @@ def get_transactions():
 @click.command(name='create_tables')
 @with_appcontext
 def create_tables():
-    db.create_all()
-    print("Database tables created.")
+    with app.app_context():
+        db.create_all()
+        print("Database tables created.")
 
 app.cli.add_command(create_tables)
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
