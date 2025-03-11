@@ -41,6 +41,22 @@ def delete_transaction(id):
         db.session.commit()
     return redirect(url_for('index'))
 
+# Vercel compatibility
+from flask import jsonify
+
+@app.route('/api/transactions', methods=['GET'])
+def get_transactions():
+    transactions = Transaction.query.order_by(Transaction.date.desc()).all()
+    transactions_list = [{
+        'id': t.id, 'date': t.date.strftime('%Y-%m-%d'), 'category': t.category,
+        'amount': t.amount, 'type': t.type
+    } for t in transactions]
+    return jsonify(transactions_list)
+
+# Entry point for Vercel
+def handler(event, context):
+    return app(event, context)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
