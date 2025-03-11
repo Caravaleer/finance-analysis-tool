@@ -12,6 +12,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# Temporary function to create the database
+def create_db():
+    with app.app_context():
+        db.create_all()
+        print("Database tables created successfully!")
+
 # Database model for transactions
 class Transaction(db.Model):
     __tablename__ = "transactions"  # Ensure correct case sensitivity
@@ -59,4 +65,5 @@ def get_transactions():
     return jsonify(transactions_list)
 
 if __name__ == '__main__':
+    create_db()  # Call the function to create tables
     app.run(debug=True)
