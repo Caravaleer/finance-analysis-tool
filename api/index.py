@@ -56,17 +56,6 @@ def get_transactions():
     } for t in transactions]
     return jsonify(transactions_list)
 
-# CLI command to create tables
-@click.command(name='create_tables')
-@with_appcontext
-def create_tables():
-    with app.app_context():
-        db.create_all()
-        print("Database tables created.")
-
-app.cli.add_command(create_tables)
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
