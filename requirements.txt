@@ -2,3 +2,5 @@ Flask
 Flask-SQLAlchemy
 Flask-WTF
 Bootstrap-Flask
+psycopg2-binary
+click
