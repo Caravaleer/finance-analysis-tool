@@ -14,7 +14,7 @@ db = SQLAlchemy(app)
 
 # Database model for transactions
 class Transaction(db.Model):
-    __tablename__ = "transaction"  # Ensure correct case sensitivity
+    __tablename__ = "transactions"  # Ensure correct case sensitivity
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     category = db.Column(db.String(50), nullable=False)
@@ -24,7 +24,7 @@ class Transaction(db.Model):
 # Route to display transactions and balance
 @app.route('/')
 def index():
-    transactions = db.session.execute(text('SELECT * FROM "transaction" ORDER BY date DESC')).fetchall()
+    transactions = db.session.execute(text('SELECT * FROM "transactions" ORDER BY date DESC')).fetchall()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
     return render_template('index.html', transactions=transactions, balance=balance)
 
@@ -51,7 +51,7 @@ def delete_transaction(id):
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
-    transactions = db.session.execute(text('SELECT * FROM "transaction" ORDER BY date DESC')).fetchall()
+    transactions = db.session.execute(text('SELECT * FROM "transactions" ORDER BY date DESC')).fetchall()
     transactions_list = [{
         'id': t.id, 'date': t.date.strftime('%Y-%m-%d'), 'category': t.category,
         'amount': t.amount, 'type': t.type
