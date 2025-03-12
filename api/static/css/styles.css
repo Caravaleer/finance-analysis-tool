@@ -1,105 +1,61 @@
-/* Global Styles */
 body {
-    font-family: Arial, sans-serif;
     background-color: #f4f4f4;
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
   }
-  
   .container {
-    background-color: #ffffff;
+    background-color: #fff;
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-    margin: 20px;
-    box-sizing: border-box;
-  }
-  
-  /* Heading */
-  h2 {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
     text-align: center;
+    margin: 50px auto;
+    max-width: 400px;
+    width: 100%;
   }
-  
-  /* Form Layout */
-  form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px; /* spacing between form elements */
+  @media (max-width: 600px) {
+    .container {
+      width: 90%;
+      padding: 20px;
+    }
   }
-  
+  h2 {
+    margin-bottom: 20px;
+  }
   label {
-    margin-bottom: 5px;
-    color: #555;
-    font-weight: 500;
+    display: block;
+    margin: 10px 0 5px;
+    text-align: left;
   }
-  
-  /* Inputs */
   input {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
+    margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    font-size: 1rem;
     box-sizing: border-box;
   }
-  
-  /* Button */
   button {
     width: 100%;
-    padding: 12px;
-    background-color: #007bff;
+    padding: 10px;
+    background-color: #007BFF;
     border: none;
     color: #fff;
-    font-size: 1rem;
+    font-size: 16px;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
   }
-  
   button:hover {
     background-color: #0056b3;
   }
-  
-  /* Paragraphs & Links */
   p {
-    margin-top: 10px;
-    font-size: 0.9rem;
-    text-align: center;
+    margin-top: 15px;
   }
-  
   a {
+    color: #007BFF;
     text-decoration: none;
-    color: #007bff;
-    font-weight: bold;
   }
-  
   a:hover {
     text-decoration: underline;
-  }
-  
-  /* Mobile-friendly adjustments */
-  @media (max-width: 600px) {
-    .container {
-      padding: 20px;
-      margin: 10px;
-    }
-  
-    h2 {
-      font-size: 1.5rem;
-    }
-  
-    input,
-    button {
-      padding: 10px;
-      font-size: 0.9rem;
-    }
   }
