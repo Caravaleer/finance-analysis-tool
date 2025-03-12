@@ -4,3 +4,4 @@ Flask-WTF
 Bootstrap-Flask
 psycopg2-binary
 click
+Flask-Migrate
