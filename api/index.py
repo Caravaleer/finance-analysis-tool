@@ -1,26 +1,28 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import datetime
-from flask.cli import with_appcontext
-import click
 from sqlalchemy import text
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
+
+db_url = os.getenv('DATABASE_URL', '')
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+if not db_url:
+    raise ValueError("DATABASE_URL is not set!")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url + "?sslmode=require"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
-# Temporary function to create the database
-def create_db():
-    with app.app_context():
-        db.create_all()
-        print("Database tables created successfully!")
+migrate = Migrate(app, db)
 
 # Database model for transactions
 class Transaction(db.Model):
-    __tablename__ = "transactions"  # Ensure correct case sensitivity
+    __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     category = db.Column(db.String(50), nullable=False)
@@ -30,7 +32,7 @@ class Transaction(db.Model):
 # Route to display transactions and balance
 @app.route('/')
 def index():
-    transactions = db.session.execute(text('SELECT * FROM "transactions" ORDER BY date DESC')).fetchall()
+    transactions = Transaction.query.order_by(Transaction.date.desc()).all()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
     return render_template('index.html', transactions=transactions, balance=balance)
 
@@ -48,7 +50,7 @@ def add_transaction():
 # Route to delete a transaction
 @app.route('/delete/<int:id>')
 def delete_transaction(id):
-    transaction = db.session.get(Transaction, id)
+    transaction = Transaction.query.get(id)
     if transaction:
         db.session.delete(transaction)
         db.session.commit()
@@ -57,7 +59,7 @@ def delete_transaction(id):
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
-    transactions = db.session.execute(text('SELECT * FROM "transactions" ORDER BY date DESC')).fetchall()
+    transactions = Transaction.query.order_by(Transaction.date.desc()).all()
     transactions_list = [{
         'id': t.id, 'date': t.date.strftime('%Y-%m-%d'), 'category': t.category,
         'amount': t.amount, 'type': t.type
@@ -65,5 +67,4 @@ def get_transactions():
     return jsonify(transactions_list)
 
 if __name__ == '__main__':
-    create_db()  # Call the function to create tables
     app.run(debug=True)
