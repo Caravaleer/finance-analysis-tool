@@ -164,44 +164,47 @@
 
     <!-- Card for Transactions Table -->
     <div class="card p-3 mb-4">
-      <table class="table table-striped mb-0">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Type</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for transaction in transactions %}
-          <tr>
-            <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-            <td>
-              {% if transaction.category == 'Food' %} 🍔 Food
-              {% elif transaction.category == 'Travel' %} ✈️ Travel
-              {% elif transaction.category == 'Study' %} 📚 Study
-              {% elif transaction.category == 'Grocery' %} 🛒 Grocery
-              {% else %} 🔹 Misc {% endif %}
-            </td>
-            <td>₹{{ transaction.amount }}</td>
-            <td
-              class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}"
-            >
-              {{ transaction.type.capitalize() }}
-            </td>
-            <td>
-              <a
-                href="/delete/{{ transaction.id }}"
-                class="btn btn-danger btn-sm"
-                >Delete</a
+      <div class="table-responsive">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for transaction in transactions %}
+            <tr>
+              <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
+              <td>
+                {% if transaction.category == 'Food' %} 🍔 Food
+                {% elif transaction.category == 'Travel' %} ✈️ Travel
+                {% elif transaction.category == 'Study' %} 📚 Study
+                {% elif transaction.category == 'Grocery' %} 🛒 Grocery
+                {% else %} 🔹 Misc {% endif %}
+              </td>
+              <td>₹{{ transaction.amount }}</td>
+              <td
+                class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}"
               >
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                {{ transaction.type.capitalize() }}
+              </td>
+              <td>
+                <a
+                  href="/delete/{{ transaction.id }}"
+                  class="btn btn-danger btn-sm"
+                >
+                  Delete
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
