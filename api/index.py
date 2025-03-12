@@ -75,7 +75,7 @@ def logout():
 def index():
     transactions = db.session.execute(text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'), {'user_id': current_user.id}).fetchall()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
-    return render_template('index.html', transactions=transactions, balance=balance)
+    return render_template('index.html', transactions=transactions, balance=balance, username=current_user.username)
 
 # Route to add a transaction
 @app.route('/add', methods=['POST'])
