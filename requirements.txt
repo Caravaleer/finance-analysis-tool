@@ -5,3 +5,5 @@ Bootstrap-Flask
 psycopg2-binary
 click
 Flask-Migrate
+flask-bcrypt
+flask-login
