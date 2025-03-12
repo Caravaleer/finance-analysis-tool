@@ -4,6 +4,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import datetime
 from sqlalchemy import text
+import subprocess
+
+@app.route('/migrate')
+def run_migrations():
+    try:
+        result = subprocess.run(['flask', 'db', 'upgrade'], capture_output=True, text=True)
+        return f'STDOUT: {result.stdout}<br>STDERR: {result.stderr}'
+    except Exception as e:
+        return str(e)
 
 app = Flask(__name__)
 
