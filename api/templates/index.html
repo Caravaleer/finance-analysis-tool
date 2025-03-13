@@ -75,6 +75,11 @@
     .card {
       margin-bottom: 20px;
     }
+    
+    /* Card view for transactions on mobile */
+    .transaction-card {
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -137,8 +142,9 @@
       </form>
     </div>
     
-    <!-- Card for Transactions Table -->
-    <div class="card p-3">
+    <!-- Transactions Section -->
+    <!-- Table view for medium+ screens -->
+    <div class="card p-3 d-none d-sm-block">
       <div class="table-responsive">
         <table class="table table-striped mb-0">
           <thead>
@@ -162,9 +168,10 @@
                 {% else %} 🔹 Misc {% endif %}
               </td>
               <td>₹{{ transaction.amount }}</td>
-              <td class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">{{ transaction.type.capitalize() }}</td>
+              <td class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                {{ transaction.type.capitalize() }}
+              </td>
               <td>
-                <!-- Edit button with data attributes -->
                 <button class="btn btn-warning btn-sm edit-btn"
                   data-id="{{ transaction.id }}"
                   data-category="{{ transaction.category }}"
@@ -180,6 +187,41 @@
           </tbody>
         </table>
       </div>
+    </div>
+    
+    <!-- Card view for small screens -->
+    <div class="d-block d-sm-none">
+      {% for transaction in transactions %}
+      <div class="card transaction-card p-3">
+        <p><strong>Date:</strong> {{ transaction.date.strftime('%Y-%m-%d') }}</p>
+        <p>
+          <strong>Category:</strong>
+          {% if transaction.category == 'Food' %} 🍔 Food
+          {% elif transaction.category == 'Travel' %} ✈️ Travel
+          {% elif transaction.category == 'Study' %} 📚 Study
+          {% elif transaction.category == 'Grocery' %} 🛒 Grocery
+          {% else %} 🔹 Misc {% endif %}
+        </p>
+        <p><strong>Amount:</strong> ₹{{ transaction.amount }}</p>
+        <p>
+          <strong>Type:</strong>
+          <span class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+            {{ transaction.type.capitalize() }}
+          </span>
+        </p>
+        <div class="d-flex justify-content-between mt-2">
+          <button class="btn btn-warning btn-sm edit-btn"
+            data-id="{{ transaction.id }}"
+            data-category="{{ transaction.category }}"
+            data-amount="{{ transaction.amount }}"
+            data-type="{{ transaction.type }}"
+          >
+            Edit
+          </button>
+          <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
+        </div>
+      </div>
+      {% endfor %}
     </div>
   </div>
   
