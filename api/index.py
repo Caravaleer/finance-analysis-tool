@@ -73,7 +73,10 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    transactions = db.session.execute(text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'), {'user_id': current_user.id}).fetchall()
+    transactions = db.session.execute(
+        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
+        {'user_id': current_user.id}
+    ).fetchall()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
     return render_template('index.html', transactions=transactions, balance=balance, username=current_user.username)
 
@@ -99,11 +102,29 @@ def delete_transaction(id):
         db.session.commit()
     return redirect(url_for('index'))
 
+# New route to edit a transaction
+@app.route('/edit/<int:id>', methods=['POST'])
+@login_required
+def edit_transaction(id):
+    transaction = db.session.get(Transaction, id)
+    if not transaction or transaction.user_id != current_user.id:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        transaction.category = request.form['category']
+        transaction.amount = float(request.form['amount'])
+        transaction.type = request.form['type']
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('edit_transaction.html', transaction=transaction)
+
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
 @login_required
 def get_transactions():
-    transactions = db.session.execute(text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'), {'user_id': current_user.id}).fetchall()
+    transactions = db.session.execute(
+        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
+        {'user_id': current_user.id}
+    ).fetchall()
     transactions_list = [{
         'id': t.id, 'date': t.date.strftime('%Y-%m-%d'), 'category': t.category,
         'amount': t.amount, 'type': t.type

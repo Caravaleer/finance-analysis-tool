@@ -9,45 +9,7 @@
     rel="stylesheet"
   />
   <style>
-    /* Navbar */
-    .navbar {
-      width: 100%;
-      background-color: #007BFF;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 50px;
-      z-index: 1000;
-      font-family: Arial, sans-serif;
-    }
-    .navbar .welcome {
-      font-size: 18px;
-    }
-    .navbar .logout {
-      color: white;
-      text-decoration: none;
-      font-size: 16px;
-      padding: 5px 15px;
-      background-color: #0056b3; /* Slightly darker blue */
-      border-radius: 5px;
-    }
-    .navbar .logout:hover {
-      background-color: #004494;
-    }
-
-    /* Container to center content & add top margin for navbar */
-    .main-container {
-      max-width: 800px;
-      margin: 80px auto 0; /* 80px top to avoid navbar overlap */
-      padding: 0 15px;
-    }
-
-    /* Keep existing styles */
+    /* Existing styles */
     .selected {
       background-color: var(--bs-btn-hover-bg);
       border-color: var(--bs-btn-hover-border-color);
@@ -71,6 +33,48 @@
       justify-content: center;
       font-size: 1.2rem;
     }
+    
+    /* Navbar styling */
+    .navbar {
+      width: 100%;
+      background-color: #007BFF;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 50px;
+      z-index: 1000;
+      font-family: Arial, sans-serif;
+    }
+    .navbar .welcome {
+      font-size: 18px;
+    }
+    .navbar .logout {
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+      padding: 5px 15px;
+      background-color: #0056b3;
+      border-radius: 5px;
+    }
+    .navbar .logout:hover {
+      background-color: #004494;
+    }
+    
+    /* Main container styling */
+    .main-container {
+      max-width: 800px;
+      margin: 80px auto 0;
+      padding: 0 15px;
+    }
+    
+    .card {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -79,13 +83,12 @@
     <span class="welcome">Welcome, {{ username }}</span>
     <a href="{{ url_for('logout') }}" class="logout">Logout</a>
   </nav>
-
+  
   <div class="main-container">
-    <!-- Page Title -->
     <h2 class="text-center mb-4">Finance Tracker</h2>
-
+    
     <!-- Card for Balance & Form -->
-    <div class="card p-3 mb-4">
+    <div class="card p-3">
       <h4 class="mb-3">Balance: ₹{{ balance }}</h4>
       <form action="/add" method="POST">
         <div class="row g-2">
@@ -103,56 +106,28 @@
         </div>
         <div class="button-group mt-3">
           <input type="hidden" id="type" name="type" value="expense" />
-          <button
-            type="button"
-            class="btn btn-outline-success type-btn"
-            data-type="income"
-          >
+          <button type="button" class="btn btn-outline-success type-btn" data-type="income">
             💰 Income
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-danger type-btn selected"
-            data-type="expense"
-          >
+          <button type="button" class="btn btn-outline-danger type-btn selected" data-type="expense">
             💸 Expense
           </button>
         </div>
         <div class="button-group mt-3">
           <input type="hidden" id="category" name="category" />
-          <button
-            type="button"
-            class="btn btn-outline-primary category-btn"
-            data-category="Food"
-          >
+          <button type="button" class="btn btn-outline-primary category-btn" data-category="Food">
             🍔
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-success category-btn"
-            data-category="Travel"
-          >
+          <button type="button" class="btn btn-outline-success category-btn" data-category="Travel">
             ✈️
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-warning category-btn"
-            data-category="Study"
-          >
+          <button type="button" class="btn btn-outline-warning category-btn" data-category="Study">
             📚
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-info category-btn"
-            data-category="Grocery"
-          >
+          <button type="button" class="btn btn-outline-info category-btn" data-category="Grocery">
             🛒
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-secondary category-btn"
-            data-category="Misc"
-          >
+          <button type="button" class="btn btn-outline-secondary category-btn" data-category="Misc">
             🔹
           </button>
         </div>
@@ -161,9 +136,9 @@
         </div>
       </form>
     </div>
-
+    
     <!-- Card for Transactions Table -->
-    <div class="card p-3 mb-4">
+    <div class="card p-3">
       <div class="table-responsive">
         <table class="table table-striped mb-0">
           <thead>
@@ -187,18 +162,18 @@
                 {% else %} 🔹 Misc {% endif %}
               </td>
               <td>₹{{ transaction.amount }}</td>
-              <td
-                class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}"
-              >
-                {{ transaction.type.capitalize() }}
-              </td>
+              <td class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">{{ transaction.type.capitalize() }}</td>
               <td>
-                <a
-                  href="/delete/{{ transaction.id }}"
-                  class="btn btn-danger btn-sm"
+                <!-- Edit button with data attributes -->
+                <button class="btn btn-warning btn-sm edit-btn"
+                  data-id="{{ transaction.id }}"
+                  data-category="{{ transaction.category }}"
+                  data-amount="{{ transaction.amount }}"
+                  data-type="{{ transaction.type }}"
                 >
-                  Delete
-                </a>
+                  Edit
+                </button>
+                <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
               </td>
             </tr>
             {% endfor %}
@@ -207,9 +182,51 @@
       </div>
     </div>
   </div>
-
+  
+  <!-- Bootstrap Modal for Editing Transaction -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="editForm" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel">Edit Transaction</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="editAmount" class="form-label">Amount (₹)</label>
+              <input type="number" step="0.01" class="form-control" id="editAmount" name="amount" required>
+            </div>
+            <div class="mb-3">
+              <label for="editCategory" class="form-label">Category</label>
+              <select class="form-select" id="editCategory" name="category" required>
+                <option value="Food">🍔 Food</option>
+                <option value="Travel">✈️ Travel</option>
+                <option value="Study">📚 Study</option>
+                <option value="Grocery">🛒 Grocery</option>
+                <option value="Misc">🔹 Misc</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="editType" class="form-label">Type</label>
+              <select class="form-select" id="editType" name="type" required>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Category & Type button behavior remains unchanged
     document.querySelectorAll(".category-btn").forEach((button) => {
       button.addEventListener("click", function () {
         document.getElementById("category").value = this.getAttribute("data-category");
@@ -217,12 +234,34 @@
         this.classList.add("selected");
       });
     });
-
     document.querySelectorAll(".type-btn").forEach((button) => {
       button.addEventListener("click", function () {
         document.getElementById("type").value = this.getAttribute("data-type");
         document.querySelectorAll(".type-btn").forEach((btn) => btn.classList.remove("selected"));
         this.classList.add("selected");
+      });
+    });
+    
+    // Edit modal functionality
+    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    document.querySelectorAll('.edit-btn').forEach((btn) => {
+      btn.addEventListener('click', function () {
+        // Get data from button attributes
+        const id = this.getAttribute('data-id');
+        const category = this.getAttribute('data-category');
+        const amount = this.getAttribute('data-amount');
+        const type = this.getAttribute('data-type');
+        
+        // Populate modal form fields
+        document.getElementById('editAmount').value = amount;
+        document.getElementById('editCategory').value = category;
+        document.getElementById('editType').value = type;
+        
+        // Set the form action to /edit/<id>
+        document.getElementById('editForm').action = '/edit/' + id;
+        
+        // Show the modal
+        editModal.show();
       });
     });
   </script>
