@@ -110,8 +110,11 @@ def edit_transaction(id):
     transaction.category = request.form['category']
     transaction.amount = float(request.form['amount'])
     transaction.type = request.form['type']
+    # Parse the new date from the form (expected format: YYYY-MM-DD)
+    transaction.date = datetime.datetime.strptime(request.form['date'], "%Y-%m-%d")
     db.session.commit()
     return redirect(url_for('index'))
+
 
 # New Analysis Route using client-side charting
 @app.route('/analysis')
