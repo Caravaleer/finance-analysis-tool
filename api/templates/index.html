@@ -15,6 +15,7 @@
       color: white;
       padding: 10px 20px;
       display: flex;
+      flex-wrap: nowrap;
       justify-content: space-between;
       align-items: center;
       position: fixed;
@@ -46,6 +47,23 @@
     }
     .navbar .logout:hover {
       background-color: #004494;
+    }
+    
+    /* Media Query for Mobile */
+    @media (max-width: 600px) {
+      .navbar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px;
+      }
+      .navbar .d-flex {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .navbar .logout {
+        margin-top: 10px;
+        align-self: flex-end;
+      }
     }
     
     /* Main container styling */
@@ -96,7 +114,7 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
+  <!-- Updated Navbar -->
   <nav class="navbar">
     <div class="d-flex align-items-center">
       <span class="welcome me-3">Welcome, {{ username }}</span>
