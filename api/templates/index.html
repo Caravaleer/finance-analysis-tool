@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Finance Tracker</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Bootstrap Icons for toggle if needed -->
+  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     /* Navbar styling */
@@ -15,7 +15,6 @@
       color: white;
       padding: 10px 20px;
       display: flex;
-      flex-wrap: nowrap;
       justify-content: space-between;
       align-items: center;
       position: fixed;
@@ -25,28 +24,25 @@
       z-index: 1000;
       font-family: Arial, sans-serif;
     }
-    .navbar .welcome {
-      font-size: 18px;
+    .navbar .nav-links {
+      display: flex;
+      gap: 10px;
     }
     .navbar .nav-link {
       color: white;
       text-decoration: none;
       font-size: 16px;
-      margin-right: 10px;
     }
     .navbar .nav-link:hover {
       text-decoration: underline;
     }
-    .navbar .logout {
-      color: white;
-      text-decoration: none;
-      font-size: 16px;
-      padding: 5px 15px;
-      background-color: #0056b3;
-      border-radius: 5px;
+    /* User Profile Dropdown */
+    .profile-dropdown .dropdown-toggle::after {
+      display: none;
     }
-    .navbar .logout:hover {
-      background-color: #004494;
+    .profile-icon {
+      font-size: 1.8rem;
+      cursor: pointer;
     }
     
     /* Media Query for Mobile */
@@ -56,13 +52,10 @@
         height: auto;
         padding: 10px;
       }
-      .navbar .d-flex {
+      .navbar .nav-links {
         width: 100%;
         justify-content: space-between;
-      }
-      .navbar .logout {
-        margin-top: 10px;
-        align-self: flex-end;
+        margin-bottom: 5px;
       }
     }
     
@@ -114,14 +107,22 @@
   </style>
 </head>
 <body>
-  <!-- Updated Navbar -->
+  <!-- Navbar with Profile Dropdown -->
   <nav class="navbar">
-    <div class="d-flex align-items-center">
-      <span class="welcome me-3">Welcome, {{ username }}</span>
+    <div class="nav-links">
       <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
       <a href="{{ url_for('analysis') }}" class="nav-link">Analysis</a>
     </div>
-    <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+    <div class="dropdown profile-dropdown">
+      <a class="dropdown-toggle text-white" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-person-circle profile-icon"></i>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
+        <li class="dropdown-item-text">Welcome, {{ username }}</li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+      </ul>
+    </div>
   </nav>
   
   <div class="main-container">
