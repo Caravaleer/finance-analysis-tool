@@ -4,3 +4,4 @@ psycopg2-binary
 Flask-Migrate
 flask-bcrypt
 flask-login
+pandas
