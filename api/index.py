@@ -120,24 +120,58 @@ def edit_transaction(id):
 @app.route('/analysis')
 @login_required
 def analysis():
+    graph_type = request.args.get('graph', 'overall')  # default to overall if not provided
     transactions = Transaction.query.filter_by(user_id=current_user.id).all()
+    
     if not transactions:
         return render_template('analysis.html', msg="No transactions available for analysis", username=current_user.username)
     
-    total_income = sum(t.amount for t in transactions if t.type == 'income')
-    total_expense = sum(t.amount for t in transactions if t.type == 'expense')
-    
-    # Build category totals for expense transactions
-    expense_categories = {}
-    for t in transactions:
-        if t.type == 'expense':
-            expense_categories[t.category] = expense_categories.get(t.category, 0) + t.amount
+    if graph_type == 'month':
+        # Process transactions month wise
+        # Create a DataFrame (if using pandas) or manually group transactions by month
+        # Here’s a simple example using pandas:
+        import pandas as pd
+        df = pd.DataFrame([{
+            'date': t.date,
+            'amount': t.amount,
+            'type': t.type,
+            'category': t.category
+        } for t in transactions])
+        df['month'] = df['date'].dt.strftime('%Y-%m')
+        
+        total_income = df[df['type'] == 'income'].groupby('month')['amount'].sum().to_dict()
+        total_expense = df[df['type'] == 'expense'].groupby('month')['amount'].sum().to_dict()
+        
+        # For the charts, you might want to pass the sorted keys and values.
+        months = sorted(set(df['month']))
+        income_values = [total_income.get(month, 0) for month in months]
+        expense_values = [total_expense.get(month, 0) for month in months]
+        
+        # You can then pass these values to the template:
+        return render_template('analysis.html',
+                               username=current_user.username,
+                               graph_type='month',
+                               months=months,
+                               income_values=income_values,
+                               expense_values=expense_values)
+    else:
+        # Overall analysis: Calculate total income and total expense
+        total_income = sum(t.amount for t in transactions if t.type == 'income')
+        total_expense = sum(t.amount for t in transactions if t.type == 'expense')
+        
+        # And build category totals for expense transactions
+        expense_categories = {}
+        for t in transactions:
+            if t.type == 'expense':
+                expense_categories[t.category] = expense_categories.get(t.category, 0) + t.amount
+                
+        return render_template('analysis.html',
+                               username=current_user.username,
+                               graph_type='overall',
+                               total_income=total_income,
+                               total_expense=total_expense,
+                               expense_categories=expense_categories)
 
-    return render_template('analysis.html',
-                           username=current_user.username,
-                           total_income=total_income,
-                           total_expense=total_expense,
-                           expense_categories=expense_categories)
 
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
