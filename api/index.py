@@ -2,14 +2,9 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 import datetime
-from flask.cli import with_appcontext
-import click
 from sqlalchemy import text
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-import io, base64
-import matplotlib.pyplot as plt
-import pandas as pd
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
@@ -105,7 +100,7 @@ def delete_transaction(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-# Route to edit a transaction (using modal form, expects POST)
+# Route to edit a transaction (via modal form)
 @app.route('/edit/<int:id>', methods=['POST'])
 @login_required
 def edit_transaction(id):
@@ -118,7 +113,7 @@ def edit_transaction(id):
     db.session.commit()
     return redirect(url_for('index'))
 
-# New Analysis Route to display graphs
+# New Analysis Route using client-side charting
 @app.route('/analysis')
 @login_required
 def analysis():
@@ -126,42 +121,20 @@ def analysis():
     if not transactions:
         return render_template('analysis.html', msg="No transactions available for analysis", username=current_user.username)
     
-    # Convert transactions to a DataFrame
-    df = pd.DataFrame([{
-        'date': t.date, 'category': t.category, 'amount': t.amount, 'type': t.type
-    } for t in transactions])
+    total_income = sum(t.amount for t in transactions if t.type == 'income')
+    total_expense = sum(t.amount for t in transactions if t.type == 'expense')
     
-    # Income vs Expense Pie Chart
-    income_total = df[df['type'] == 'income']['amount'].sum()
-    expense_total = df[df['type'] == 'expense']['amount'].sum()
-    fig1, ax1 = plt.subplots()
-    ax1.pie([income_total, expense_total], labels=['Income', 'Expense'], autopct='%1.1f%%', colors=['#28a745', '#dc3545'], startangle=90)
-    ax1.axis('equal')
-    buf1 = io.BytesIO()
-    fig1.savefig(buf1, format='png', bbox_inches="tight")
-    buf1.seek(0)
-    img_income_vs_expense = base64.b64encode(buf1.getvalue()).decode('utf-8')
-    plt.close(fig1)
-    
-    # Bar Chart for Expense by Category (if expenses exist)
-    expense_df = df[df['type'] == 'expense']
-    img_category = None
-    if not expense_df.empty:
-        category_totals = expense_df.groupby('category')['amount'].sum().sort_values(ascending=False)
-        fig2, ax2 = plt.subplots()
-        category_totals.plot(kind='bar', color='#007BFF', ax=ax2)
-        ax2.set_title('Expense by Category')
-        ax2.set_ylabel('Total Amount (₹)')
-        plt.xticks(rotation=45, ha='right')
-        buf2 = io.BytesIO()
-        fig2.savefig(buf2, format='png', bbox_inches="tight")
-        buf2.seek(0)
-        img_category = base64.b64encode(buf2.getvalue()).decode('utf-8')
-        plt.close(fig2)
-    
-    return render_template('analysis.html', username=current_user.username,
-                           img_income_vs_expense="data:image/png;base64," + img_income_vs_expense,
-                           img_category= "data:image/png;base64," + img_category if img_category else None)
+    # Build category totals for expense transactions
+    expense_categories = {}
+    for t in transactions:
+        if t.type == 'expense':
+            expense_categories[t.category] = expense_categories.get(t.category, 0) + t.amount
+
+    return render_template('analysis.html',
+                           username=current_user.username,
+                           total_income=total_income,
+                           total_expense=total_expense,
+                           expense_categories=expense_categories)
 
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
