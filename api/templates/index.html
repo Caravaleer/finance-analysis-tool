@@ -5,53 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Finance Tracker</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Bootstrap Icons for toggle if needed -->
+  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
-    /* Navbar styling */
-    .navbar {
-      width: 100%;
-      background-color: #007BFF;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 50px;
-      z-index: 1000;
-      font-family: Arial, sans-serif;
+    /* Navbar styling using Bootstrap */
+    .navbar-brand {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #fff !important;
     }
-    .navbar .welcome {
-      font-size: 18px;
+    .nav-link {
+      color: #fff !important;
+      margin-right: 1rem;
     }
-    .navbar .nav-link {
-      color: white;
-      text-decoration: none;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-    .navbar .nav-link:hover {
+    .nav-link:hover {
       text-decoration: underline;
     }
-    .navbar .logout {
-      color: white;
-      text-decoration: none;
-      font-size: 16px;
-      padding: 5px 15px;
-      background-color: #0056b3;
-      border-radius: 5px;
+    .dropdown-toggle::after {
+      display: none; /* Hide default caret */
     }
-    .navbar .logout:hover {
-      background-color: #004494;
+    .profile-icon {
+      font-size: 1.8rem;
+      cursor: pointer;
     }
     
     /* Main container styling */
     .main-container {
       max-width: 800px;
-      margin: 80px auto 0;
+      margin-top: 80px; /* offset for fixed navbar */
+      margin-bottom: 40px;
+      margin-left: auto;
+      margin-right: auto;
       padding: 0 15px;
     }
     .card {
@@ -96,14 +80,46 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="d-flex align-items-center">
-      <span class="welcome me-3">Welcome, {{ username }}</span>
-      <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
-      <a href="{{ url_for('analysis') }}" class="nav-link">Analysis</a>
+  <!-- Responsive Navbar with Profile Dropdown -->
+  <nav class="navbar navbar-expand-md navbar-dark bg-primary fixed-top">
+    <div class="container-fluid">
+      <!-- Brand -->
+      <a class="navbar-brand" href="{{ url_for('index') }}">Finance Tracker</a>
+      
+      <!-- Toggler -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+              aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Collapsible Menu -->
+      <div class="collapse navbar-collapse" id="navbarNavDropdown">
+        <!-- Left side links -->
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('index') }}">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('analysis') }}">Analysis</a>
+          </li>
+        </ul>
+
+        <!-- Right side user profile dropdown -->
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle profile-icon"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li class="dropdown-item-text">Welcome, {{ username }}</li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </div>
-    <a href="{{ url_for('logout') }}" class="logout">Logout</a>
   </nav>
   
   <div class="main-container">
@@ -115,43 +131,21 @@
       <form action="/add" method="POST">
         <div class="row g-2">
           <div class="col-12">
-            <input
-              type="number"
-              inputmode="decimal"
-              step="0.01"
-              name="amount"
-              class="form-control"
-              placeholder="₹ Amount"
-              required
-            />
+            <input type="number" inputmode="decimal" step="0.01" name="amount" class="form-control" placeholder="₹ Amount" required>
           </div>
         </div>
         <div class="button-group mt-3">
-          <input type="hidden" id="type" name="type" value="expense" />
-          <button type="button" class="btn btn-outline-success type-btn" data-type="income">
-            💰 Income
-          </button>
-          <button type="button" class="btn btn-outline-danger type-btn selected" data-type="expense">
-            💸 Expense
-          </button>
+          <input type="hidden" id="type" name="type" value="expense">
+          <button type="button" class="btn btn-outline-success type-btn" data-type="income">💰 Income</button>
+          <button type="button" class="btn btn-outline-danger type-btn selected" data-type="expense">💸 Expense</button>
         </div>
         <div class="button-group mt-3">
-          <input type="hidden" id="category" name="category" />
-          <button type="button" class="btn btn-outline-primary category-btn" data-category="Food">
-            🍔
-          </button>
-          <button type="button" class="btn btn-outline-success category-btn" data-category="Travel">
-            ✈️
-          </button>
-          <button type="button" class="btn btn-outline-warning category-btn" data-category="Study">
-            📚
-          </button>
-          <button type="button" class="btn btn-outline-info category-btn" data-category="Grocery">
-            🛒
-          </button>
-          <button type="button" class="btn btn-outline-secondary category-btn" data-category="Misc">
-            🔹
-          </button>
+          <input type="hidden" id="category" name="category">
+          <button type="button" class="btn btn-outline-primary category-btn" data-category="Food">🍔</button>
+          <button type="button" class="btn btn-outline-success category-btn" data-category="Travel">✈️</button>
+          <button type="button" class="btn btn-outline-warning category-btn" data-category="Study">📚</button>
+          <button type="button" class="btn btn-outline-info category-btn" data-category="Grocery">🛒</button>
+          <button type="button" class="btn btn-outline-secondary category-btn" data-category="Misc">🔹</button>
         </div>
         <div class="text-center mt-3">
           <button type="submit" class="btn btn-primary">Add Transaction</button>
@@ -161,12 +155,8 @@
     
     <!-- Toggle Button for View Mode -->
     <div class="btn-group mb-4 view-toggle" role="group">
-      <button type="button" class="btn btn-outline-primary active" id="tableViewToggle">
-        <i class="bi bi-table"></i>
-      </button>
-      <button type="button" class="btn btn-outline-primary" id="cardViewToggle">
-        <i class="bi bi-grid-3x3-gap"></i>
-      </button>
+      <button type="button" class="btn btn-outline-primary active" id="tableViewToggle"><i class="bi bi-table"></i></button>
+      <button type="button" class="btn btn-outline-primary" id="cardViewToggle"><i class="bi bi-grid-3x3-gap"></i></button>
     </div>
     
     <!-- Table View for Transactions -->
@@ -257,7 +247,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <!-- New Date Field -->
+            <!-- Date Field -->
             <div class="mb-3">
               <label for="editDate" class="form-label">Date</label>
               <input type="date" class="form-control" id="editDate" name="date" required>

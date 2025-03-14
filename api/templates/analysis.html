@@ -88,7 +88,6 @@
         height: 300px;
       }
     }
-    
     /* Dropdown for graph type */
     .graph-type-dropdown {
       max-width: 300px;
@@ -147,7 +146,7 @@
             <canvas id="pieChart"></canvas>
           </div>
         </div>
-      
+        
         <div class="card p-3 mb-4">
           <h4 class="mb-3 text-center">Expense by Category</h4>
           <div class="chart-container">
@@ -173,7 +172,7 @@
     });
 
     {% if graph_type == 'month' %}
-      // Month Wise Bar Chart
+      // Month Wise Chart (Bar Chart)
       const months = {{ months|tojson }};
       const incomeValues = {{ income_values|tojson }};
       const expenseValues = {{ expense_values|tojson }};
