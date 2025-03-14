@@ -8,3 +8,4 @@ Flask-Migrate
 flask-bcrypt
 flask-login
 matplotlib
+pandas
