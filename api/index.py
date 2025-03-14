@@ -6,6 +6,9 @@ from sqlalchemy import text
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 
+# For month-wise analysis
+import pandas as pd
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -100,7 +103,7 @@ def delete_transaction(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-# Route to edit a transaction (via modal form)
+# Route to edit a transaction (including editing the date)
 @app.route('/edit/<int:id>', methods=['POST'])
 @login_required
 def edit_transaction(id):
@@ -110,44 +113,43 @@ def edit_transaction(id):
     transaction.category = request.form['category']
     transaction.amount = float(request.form['amount'])
     transaction.type = request.form['type']
-    # Parse the new date from the form (expected format: YYYY-MM-DD)
+    # Update date from form (format YYYY-MM-DD)
     transaction.date = datetime.datetime.strptime(request.form['date'], "%Y-%m-%d")
     db.session.commit()
     return redirect(url_for('index'))
 
-
-# New Analysis Route using client-side charting
+# Analysis Route for transaction graphs
 @app.route('/analysis')
 @login_required
 def analysis():
-    graph_type = request.args.get('graph', 'overall')  # default to overall if not provided
+    graph_type = request.args.get('graph', 'overall')
     transactions = Transaction.query.filter_by(user_id=current_user.id).all()
     
     if not transactions:
         return render_template('analysis.html', msg="No transactions available for analysis", username=current_user.username)
     
     if graph_type == 'month':
-        # Process transactions month wise
-        # Create a DataFrame (if using pandas) or manually group transactions by month
-        # Here’s a simple example using pandas:
-        import pandas as pd
-        df = pd.DataFrame([{
+        # Group transactions by month using pandas
+        data = [{
             'date': t.date,
             'amount': t.amount,
-            'type': t.type,
-            'category': t.category
-        } for t in transactions])
+            'type': t.type
+        } for t in transactions]
+        df = pd.DataFrame(data)
+        df['date'] = pd.to_datetime(df['date'])
         df['month'] = df['date'].dt.strftime('%Y-%m')
         
-        total_income = df[df['type'] == 'income'].groupby('month')['amount'].sum().to_dict()
-        total_expense = df[df['type'] == 'expense'].groupby('month')['amount'].sum().to_dict()
-        
-        # For the charts, you might want to pass the sorted keys and values.
+        # Group income and expense by month
+        income_df = df[df['type'] == 'income'].groupby('month')['amount'].sum().reset_index()
+        expense_df = df[df['type'] == 'expense'].groupby('month')['amount'].sum().reset_index()
         months = sorted(set(df['month']))
-        income_values = [total_income.get(month, 0) for month in months]
-        expense_values = [total_expense.get(month, 0) for month in months]
         
-        # You can then pass these values to the template:
+        income_dict = income_df.set_index('month')['amount'].to_dict()
+        expense_dict = expense_df.set_index('month')['amount'].to_dict()
+        
+        income_values = [income_dict.get(month, 0) for month in months]
+        expense_values = [expense_dict.get(month, 0) for month in months]
+        
         return render_template('analysis.html',
                                username=current_user.username,
                                graph_type='month',
@@ -155,24 +157,21 @@ def analysis():
                                income_values=income_values,
                                expense_values=expense_values)
     else:
-        # Overall analysis: Calculate total income and total expense
+        # Overall analysis
         total_income = sum(t.amount for t in transactions if t.type == 'income')
         total_expense = sum(t.amount for t in transactions if t.type == 'expense')
-        
-        # And build category totals for expense transactions
         expense_categories = {}
         for t in transactions:
             if t.type == 'expense':
                 expense_categories[t.category] = expense_categories.get(t.category, 0) + t.amount
-                
+        
         return render_template('analysis.html',
                                username=current_user.username,
                                graph_type='overall',
                                total_income=total_income,
                                total_expense=total_expense,
                                expense_categories=expense_categories)
-
-
+                               
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
 @login_required
