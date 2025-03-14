@@ -8,7 +8,7 @@
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Navbar styling similar to index.html */
+    /* Navbar styling */
     .navbar {
       width: 100%;
       background-color: #007BFF;
@@ -27,6 +27,15 @@
     .navbar .welcome {
       font-size: 18px;
     }
+    .navbar .nav-link {
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .navbar .nav-link:hover {
+      text-decoration: underline;
+    }
     .navbar .logout {
       color: white;
       text-decoration: none;
@@ -38,6 +47,7 @@
     .navbar .logout:hover {
       background-color: #004494;
     }
+    
     /* Main container styling */
     .main-container {
       max-width: 800px;
@@ -65,9 +75,13 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
+  <!-- Updated Navbar -->
   <nav class="navbar">
-    <span class="welcome">Welcome, {{ username }}</span>
+    <div class="d-flex align-items-center">
+      <span class="welcome me-3">Welcome, {{ username }}</span>
+      <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
+      <a href="{{ url_for('analysis') }}" class="nav-link">Analysis</a>
+    </div>
     <a href="{{ url_for('logout') }}" class="logout">Logout</a>
   </nav>
   

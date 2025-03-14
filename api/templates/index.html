@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Finance Tracker</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Bootstrap Icons CDN -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     /* Navbar styling */
     .navbar {
@@ -26,6 +24,15 @@
     }
     .navbar .welcome {
       font-size: 18px;
+    }
+    .navbar .nav-link {
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .navbar .nav-link:hover {
+      text-decoration: underline;
     }
     .navbar .logout {
       color: white;
@@ -49,7 +56,7 @@
       margin-bottom: 20px;
     }
     
-    /* Existing styles for buttons and groups */
+    /* Existing styles */
     .selected {
       background-color: var(--bs-btn-hover-bg);
       border-color: var(--bs-btn-hover-border-color);
@@ -74,33 +81,20 @@
       font-size: 1.2rem;
     }
     
-    /* Toggle button group styling */
-    .view-toggle .btn {
-      flex: 1;
-      font-size: 1.2rem;
-    }
-    
-    /* Card view for transactions */
-    .transaction-card {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    .transaction-card .card-title {
-      font-size: 1.1rem;
-      margin-bottom: 10px;
-    }
-    .transaction-card .card-text {
-      margin: 0;
+    /* Table responsiveness */
+    .table-responsive {
+      overflow-x: auto;
     }
   </style>
 </head>
 <body>
-  <!-- Navbar -->
+  <!-- Updated Navbar -->
   <nav class="navbar">
-    <span class="welcome">Welcome, {{ username }}</span>
+    <div class="d-flex align-items-center">
+      <span class="welcome me-3">Welcome, {{ username }}</span>
+      <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
+      <a href="{{ url_for('analysis') }}" class="nav-link">Analysis</a>
+    </div>
     <a href="{{ url_for('logout') }}" class="logout">Logout</a>
   </nav>
   
@@ -157,89 +151,48 @@
       </form>
     </div>
     
-    <!-- Toggle Button for View Mode -->
-    <div class="btn-group mb-4 view-toggle" role="group">
-      <button type="button" class="btn btn-outline-primary active" id="tableViewToggle">
-        <i class="bi bi-table"></i>
-      </button>
-      <button type="button" class="btn btn-outline-primary" id="cardViewToggle">
-        <i class="bi bi-grid-3x3-gap"></i>
-      </button>
-    </div>
-    
-    <!-- Table View for Transactions -->
-    <div id="tableView">
-      <div class="card p-3">
-        <div class="table-responsive">
-          <table class="table table-striped mb-0">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Type</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for transaction in transactions %}
-              <tr>
-                <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-                <td>
-                  {% if transaction.category == 'Food' %} 🍔 Food
-                  {% elif transaction.category == 'Travel' %} ✈️ Travel
-                  {% elif transaction.category == 'Study' %} 📚 Study
-                  {% elif transaction.category == 'Grocery' %} 🛒 Grocery
-                  {% else %} 🔹 Misc {% endif %}
-                </td>
-                <td>₹{{ transaction.amount }}</td>
-                <td class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">{{ transaction.type.capitalize() }}</td>
-                <td>
-                  <button class="btn btn-warning btn-sm edit-btn"
-                    data-id="{{ transaction.id }}"
-                    data-category="{{ transaction.category }}"
-                    data-amount="{{ transaction.amount }}"
-                    data-type="{{ transaction.type }}"
-                  >
-                    Edit
-                  </button>
-                  <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+    <!-- Card for Transactions Table -->
+    <div class="card p-3">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for transaction in transactions %}
+            <tr>
+              <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
+              <td>
+                {% if transaction.category == 'Food' %} 🍔 Food
+                {% elif transaction.category == 'Travel' %} ✈️ Travel
+                {% elif transaction.category == 'Study' %} 📚 Study
+                {% elif transaction.category == 'Grocery' %} 🛒 Grocery
+                {% else %} 🔹 Misc {% endif %}
+              </td>
+              <td>₹{{ transaction.amount }}</td>
+              <td class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">{{ transaction.type.capitalize() }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm edit-btn"
+                  data-id="{{ transaction.id }}"
+                  data-category="{{ transaction.category }}"
+                  data-amount="{{ transaction.amount }}"
+                  data-type="{{ transaction.type }}"
+                >
+                  Edit
+                </button>
+                <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-    </div>
-    
-    <!-- Card View for Transactions (initially hidden) -->
-    <div id="cardView" style="display: none;">
-      {% for transaction in transactions %}
-      <div class="transaction-card p-3">
-        <h5 class="card-title">{{ transaction.date.strftime('%Y-%m-%d') }}</h5>
-        <p class="card-text">
-          {% if transaction.category == 'Food' %} 🍔 Food
-          {% elif transaction.category == 'Travel' %} ✈️ Travel
-          {% elif transaction.category == 'Study' %} 📚 Study
-          {% elif transaction.category == 'Grocery' %} 🛒 Grocery
-          {% else %} 🔹 Misc {% endif %}
-        </p>
-        <p class="card-text">Amount: ₹{{ transaction.amount }}</p>
-        <p class="card-text {% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">Type: {{ transaction.type.capitalize() }}</p>
-        <div class="d-flex gap-2 justify-content-end mt-2">
-          <button class="btn btn-warning btn-sm edit-btn"
-            data-id="{{ transaction.id }}"
-            data-category="{{ transaction.category }}"
-            data-amount="{{ transaction.amount }}"
-            data-type="{{ transaction.type }}"
-          >
-            Edit
-          </button>
-          <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
-        </div>
-      </div>
-      {% endfor %}
     </div>
   </div>
   
@@ -286,20 +239,6 @@
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Toggle view functionality
-    document.getElementById('tableViewToggle').addEventListener('click', function() {
-      document.getElementById('tableView').style.display = 'block';
-      document.getElementById('cardView').style.display = 'none';
-      this.classList.add('active');
-      document.getElementById('cardViewToggle').classList.remove('active');
-    });
-    document.getElementById('cardViewToggle').addEventListener('click', function() {
-      document.getElementById('tableView').style.display = 'none';
-      document.getElementById('cardView').style.display = 'block';
-      this.classList.add('active');
-      document.getElementById('tableViewToggle').classList.remove('active');
-    });
-    
     // Category & Type button behavior
     document.querySelectorAll(".category-btn").forEach((button) => {
       button.addEventListener("click", function () {
