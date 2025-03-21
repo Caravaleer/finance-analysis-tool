@@ -1,13 +1,14 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 from sqlalchemy import text
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-
+from werkzeug.utils import secure_filename
 # For month-wise analysis
 import pandas as pd
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
@@ -29,7 +30,7 @@ class User(db.Model, UserMixin):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
     category = db.Column(db.String(50), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     type = db.Column(db.String(10), nullable=False)
@@ -37,7 +38,8 @@ class Transaction(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
+
 
 # Route to register a new user
 @app.route('/register', methods=['GET', 'POST'])
@@ -114,7 +116,7 @@ def edit_transaction(id):
     transaction.amount = float(request.form['amount'])
     transaction.type = request.form['type']
     # Update date from form (format YYYY-MM-DD)
-    transaction.date = datetime.datetime.strptime(request.form['date'], "%Y-%m-%d")
+    transaction.date = datetime.strptime(request.form['date'], "%Y-%m-%d")
     db.session.commit()
     return redirect(url_for('index'))
 
@@ -129,8 +131,6 @@ def analysis():
         return render_template('analysis.html', msg="No transactions available for analysis", username=current_user.username)
     
     if graph_type == 'month':
-        # For month-wise analysis, use pandas to group data.
-        import pandas as pd
         data = [{
             'date': t.date,
             'amount': t.amount,
@@ -142,7 +142,7 @@ def analysis():
         df['month'] = df['date'].dt.strftime('%Y-%m')
         
         # Get selected month; default to current month if not provided.
-        selected_month = request.args.get('selected_month', datetime.datetime.now().strftime('%Y-%m'))
+        selected_month = request.args.get('selected_month', datetime.now().strftime('%Y-%m'))
         # Filter expense transactions for the selected month.
         df_month = df[(df['type'] == 'expense') & (df['month'] == selected_month)]
         monthly_category_data = df_month.groupby('category')['amount'].sum().to_dict()
@@ -153,7 +153,7 @@ def analysis():
             selected_category = list(monthly_category_data.keys())[0]
         
         # For the line graph: get expense transactions for the selected category in the current year.
-        current_year = datetime.datetime.now().year
+        current_year = datetime.now().year
         df_year = df[(df['type'] == 'expense') & (df['date'].dt.year == current_year)]
         if selected_category:
             df_category = df_year[df_year['category'] == selected_category].copy()
@@ -205,6 +205,131 @@ def get_transactions():
         'amount': t.amount, 'type': t.type
     } for t in transactions]
     return jsonify(transactions_list)
+
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def process_xlsx(file_path):
+    # Read the Excel file with the correct header
+    df = pd.read_excel(file_path, header=0)  # Ensure header is on the first row
+
+    # Strip spaces from column names
+    df.columns = df.columns.str.strip()
+
+    # Debugging: Print column names to verify
+    print("Column Names:", df.columns)
+
+    # Convert the 'Date' column to datetime format
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce', format='%d/%m/%y')
+
+    # Drop any rows where the Date is NaT (invalid)
+    df = df.dropna(subset=['Date'])
+
+    transactions = []
+    for _, row in df.iterrows():
+        try:
+            date = row['Date']
+            category = row['Narration']
+            withdrawal = row['Withdrawal Amt.'] if not pd.isna(row['Withdrawal Amt.']) else 0
+            deposit = row['Deposit Amt.'] if not pd.isna(row['Deposit Amt.']) else 0
+
+            # Determine transaction type
+            if withdrawal > 0:
+                amount = withdrawal
+                txn_type = "expense"
+            else:
+                amount = deposit
+                txn_type = "income"
+
+            transactions.append({
+                'date': date,
+                'category': category,
+                'amount': amount,
+                'type': txn_type
+            })
+        except Exception as e:
+            print(f"Error processing row: {row}\nError: {e}")
+
+    return transactions
+
+
+@app.route('/upload', methods=['POST'])
+@login_required
+def upload_transactions():
+    if 'file' not in request.files:
+        flash('No file uploaded', 'error')
+        return redirect(request.url)
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(request.url)
+
+    if file:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+        file.save(file_path)
+
+        try:
+            df = pd.read_excel(file_path)
+
+            # Ensure column names are clean
+            df.columns = df.columns.str.strip()
+            print("Columns:", repr(df.columns))  # Debugging output
+
+            transactions = []
+
+            for _, row in df.iterrows():
+                try:
+                    date = pd.to_datetime(row['Date'], format='%d/%m/%y', errors='coerce')
+
+                    # Ensure date is valid
+                    if pd.isna(date):
+                        print(f"Skipping invalid date in row: {row}")
+                        continue
+
+                    narration = row.get('Narration', '').strip()
+                    withdrawal = row.get('Withdrawal Amt.', 0) if not pd.isna(row.get('Withdrawal Amt.', 0)) else 0
+                    deposit = row.get('Deposit Amt.', 0) if not pd.isna(row.get('Deposit Amt.', 0)) else 0
+
+                    # Determine transaction type and amount
+                    amount = deposit if deposit > 0 else withdrawal
+                    trans_type = "income" if deposit > 0 else "expense"
+
+                    transaction = Transaction(
+                        date=date,
+                        category=narration[:50],
+                        amount=amount,
+                        type=trans_type,
+                        user_id=current_user.id
+                    )
+
+                    db.session.add(transaction)  # Add each transaction separately
+                    db.session.flush()  # Ensure it's written to the DB buffer
+
+                    transactions.append(transaction)
+
+                except Exception as e:
+                    print(f"Error processing row: {row}\nError: {e}")
+
+            if not transactions:
+                flash("No valid transactions found in the file.", "warning")
+                return redirect(url_for('index'))
+
+            db.session.commit()  # Commit all transactions at once
+            flash("Transactions uploaded successfully!", "success")
+            return redirect(url_for('index'))
+
+        except Exception as e:
+            db.session.rollback()  # Rollback in case of failure
+            print(f"Error during upload: {e}")
+            flash(f"An error occurred: {e}", "danger")
+            return redirect(url_for('index'))
+
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():
