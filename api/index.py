@@ -119,7 +119,7 @@ def edit_transaction(id):
     return redirect(url_for('index'))
 
 # Analysis Route for transaction graphs
-@app.route('/analysis')
+@app.route('/analysis', endpoint='analysis')
 @login_required
 def analysis():
     graph_type = request.args.get('graph', 'overall')
@@ -129,35 +129,54 @@ def analysis():
         return render_template('analysis.html', msg="No transactions available for analysis", username=current_user.username)
     
     if graph_type == 'month':
-        # Group transactions by month using pandas
+        # For month-wise analysis, use pandas to group data.
+        import pandas as pd
         data = [{
             'date': t.date,
             'amount': t.amount,
-            'type': t.type
+            'type': t.type,
+            'category': t.category
         } for t in transactions]
         df = pd.DataFrame(data)
         df['date'] = pd.to_datetime(df['date'])
         df['month'] = df['date'].dt.strftime('%Y-%m')
         
-        # Group income and expense by month
-        income_df = df[df['type'] == 'income'].groupby('month')['amount'].sum().reset_index()
-        expense_df = df[df['type'] == 'expense'].groupby('month')['amount'].sum().reset_index()
-        months = sorted(set(df['month']))
+        # Get selected month; default to current month if not provided.
+        selected_month = request.args.get('selected_month', datetime.datetime.now().strftime('%Y-%m'))
+        # Filter expense transactions for the selected month.
+        df_month = df[(df['type'] == 'expense') & (df['month'] == selected_month)]
+        monthly_category_data = df_month.groupby('category')['amount'].sum().to_dict()
         
-        income_dict = income_df.set_index('month')['amount'].to_dict()
-        expense_dict = expense_df.set_index('month')['amount'].to_dict()
+        # Determine selected category for the yearly line graph.
+        selected_category = request.args.get('selected_category')
+        if not selected_category and monthly_category_data:
+            selected_category = list(monthly_category_data.keys())[0]
         
-        income_values = [income_dict.get(month, 0) for month in months]
-        expense_values = [expense_dict.get(month, 0) for month in months]
+        # For the line graph: get expense transactions for the selected category in the current year.
+        current_year = datetime.datetime.now().year
+        df_year = df[(df['type'] == 'expense') & (df['date'].dt.year == current_year)]
+        if selected_category:
+            df_category = df_year[df_year['category'] == selected_category].copy()
+            df_category['month'] = df_category['date'].dt.strftime('%Y-%m')
+            # Ensure we have all months of the current year.
+            all_months = pd.date_range(f'{current_year}-01-01', f'{current_year}-12-01', freq='MS').strftime('%Y-%m')
+            yearly_data = df_category.groupby('month')['amount'].sum().reindex(all_months, fill_value=0)
+            monthly_labels = list(yearly_data.index)
+            monthly_values = list(yearly_data.values)
+        else:
+            monthly_labels = []
+            monthly_values = []
         
         return render_template('analysis.html',
                                username=current_user.username,
                                graph_type='month',
-                               months=months,
-                               income_values=income_values,
-                               expense_values=expense_values)
+                               selected_month=selected_month,
+                               monthly_category_data=monthly_category_data,
+                               selected_category=selected_category,
+                               monthly_labels=monthly_labels,
+                               monthly_values=monthly_values)
     else:
-        # Overall analysis
+        # Overall analysis (unchanged)
         total_income = sum(t.amount for t in transactions if t.type == 'income')
         total_expense = sum(t.amount for t in transactions if t.type == 'expense')
         expense_categories = {}
@@ -171,6 +190,7 @@ def analysis():
                                total_income=total_income,
                                total_expense=total_expense,
                                expense_categories=expense_categories)
+
                                
 # API Route for transactions
 @app.route('/api/transactions', methods=['GET'])
