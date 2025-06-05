@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 # For month-wise analysis
 import pandas as pd
 from datetime import datetime
+from calculate import calc
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
@@ -169,13 +170,13 @@ def analysis():
             monthly_values = []
         
         return render_template('analysis.html',
-                               username=current_user.username,
-                               graph_type='month',
-                               selected_month=selected_month,
-                               monthly_category_data=monthly_category_data,
-                               selected_category=selected_category,
-                               monthly_labels=monthly_labels,
-                               monthly_values=monthly_values)
+                            username=current_user.username,
+                            graph_type='month',
+                            selected_month=selected_month,
+                            monthly_category_data=monthly_category_data,
+                            selected_category=selected_category,
+                            monthly_labels=monthly_labels,
+                            monthly_values=monthly_values)
     else:
         # Overall analysis (unchanged)
         total_income = sum(t.amount for t in transactions if t.type == 'income')
@@ -331,6 +332,32 @@ def upload_transactions():
             return redirect(url_for('index'))
 
     return redirect(url_for('index'))
+# Route for calculator page
+@app.route('/calculate', methods=['GET', 'POST'])
+@login_required
+def calculate():
+    result = None
+    error = None
+    if request.method == 'POST':
+        try:
+            curr_bal = float(request.form.get('curr_bal', 0))
+            days_gone = int(request.form.get('days_gone', 1))
+            expenses = float(request.form.get('expenses', 0))
+            days_left = int(request.form.get('days_left', 1))
+            save = float(request.form.get('save', 0))
+            per_day_allowance, projected_expenses = calc(curr_bal, days_gone, expenses, days_left, save)
+            result = {
+                'per_day_allowance': per_day_allowance,
+                'projected_expenses': projected_expenses
+            }
+        except Exception as e:
+            error = f"Error: {e}"
+    return render_template(
+        'calculate.html',
+        username=current_user.username,
+        result=result,
+        error=error
+    )
 
 if __name__ == '__main__':
     with app.app_context():
