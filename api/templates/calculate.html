@@ -135,16 +135,13 @@
                     <input type="number" inputmode="decimal" step="0.01" name="curr_bal" id="curr_bal" class="form-control" required>
                 </div>
                 <div class="col-12">
-                    <label for="days_gone" class="form-label">Days Gone</label>
-                    <input type="number" name="days_gone" id="days_gone" class="form-control" required>
-                </div>
-                <div class="col-12">
                     <label for="expenses" class="form-label">Total Expenses So Far</label>
                     <input type="number" inputmode="decimal" step="0.01" name="expenses" id="expenses" class="form-control" required>
                 </div>
                 <div class="col-12">
-                    <label for="days_left" class="form-label">Days Left</label>
-                    <input type="number" name="days_left" id="days_left" class="form-control" required>
+                  <label for="days_left" class="form-label">Days Left</label>
+                  <input type="number" name="days_left" id="days_left" class="form-control" 
+                    placeholder="{{ days_left }}" value="{{ request.form.days_left or '' }}" required>
                 </div>
                 <div class="col-12">
                     <label for="save" class="form-label">Amount to Save</label>

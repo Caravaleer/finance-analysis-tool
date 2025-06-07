@@ -30,7 +30,7 @@ class User(db.Model, UserMixin):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=datetime.now())
     category = db.Column(db.String(50), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     type = db.Column(db.String(10), nullable=False)
@@ -354,12 +354,38 @@ def upload_transactions():
 def calculate():
     result = None
     error = None
+    days_gone = 1  # default
+    days_left = None
+
     if request.method == 'POST':
         try:
             curr_bal = float(request.form.get('curr_bal', 0))
-            days_gone = int(request.form.get('days_gone', 1))
+            now = datetime.now()
+            # Get the last day (date) in this month when a transaction was made
+            last_txn_date = db.session.execute(
+                text("""
+                    SELECT MAX(DATE(date))
+                    FROM "transactions"
+                    WHERE user_id = :user_id
+                      AND type = 'expense'
+                      AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)
+                      AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE)
+                """),
+                {'user_id': current_user.id}
+            ).scalar()
+            if last_txn_date:
+                days_gone = last_txn_date.day
+            else:
+                days_gone = 1
+
+            # Default days_left is 30 - days_gone, unless user provided a value
+            days_left = request.form.get('days_left')
+            if days_left is None or days_left == '':
+                days_left = 30 - days_gone
+            else:
+                days_left = int(days_left)
+
             expenses = float(request.form.get('expenses', 0))
-            days_left = int(request.form.get('days_left', 1))
             save = float(request.form.get('save', 0))
             per_day_allowance, projected_expenses = calc(curr_bal, days_gone, expenses, days_left, save)
             result = {
@@ -368,11 +394,32 @@ def calculate():
             }
         except Exception as e:
             error = f"Error: {e}"
+    else:
+        # On GET, get the last day of this month when a transaction was made
+        now = datetime.now()
+        last_txn_date = db.session.execute(
+            text("""
+                SELECT MAX(DATE(date))
+                FROM "transactions"
+                WHERE user_id = :user_id
+                  AND type = 'expense'
+                  AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)
+                  AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE)
+            """),
+            {'user_id': current_user.id}
+        ).scalar()
+        if last_txn_date:
+            days_gone = last_txn_date.day
+        else:
+            days_gone = 1
+        days_left = 30 - days_gone
+
     return render_template(
         'calculate.html',
         username=current_user.username,
         result=result,
-        error=error
+        error=error,
+        days_left=days_left  # Pass days_left to use as placeholder
     )
 
 if __name__ == '__main__':
