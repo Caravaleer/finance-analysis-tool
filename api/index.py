@@ -356,32 +356,22 @@ def calculate():
     error = None
     days_gone = 1  # default
     days_left = None
+    # Get transactions for the current user
     transactions = db.session.execute(
         text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
         {'user_id': current_user.id}
     ).fetchall()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
-    expenses = sum(t.amount for t in transactions if t.type == 'expense')
+
+    # Filter expenses for only the current month
+    now = datetime.now()
+    expenses = sum(
+        t.amount for t in transactions
+        if t.type == 'expense' and t.date.year == now.year and t.date.month == now.month
+    )
     if request.method == 'POST':
         try:
-            now = datetime.now()
-            # Get the last day (date) in this month when a transaction was made
-            last_txn_date = db.session.execute(
-                text("""
-                    SELECT MAX(DATE(date))
-                    FROM "transactions"
-                    WHERE user_id = :user_id
-                      AND type = 'expense'
-                      AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)
-                      AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE)
-                """),
-                {'user_id': current_user.id}
-            ).scalar()
-            if last_txn_date:
-                days_gone = last_txn_date.day
-            else:
-                days_gone = 1
-
+            days_gone = datetime.now().date().day
             # Default days_left is 30 - days_gone, unless user provided a value
             days_left = request.form.get('days_left')
             if days_left is None or days_left == '':
@@ -398,23 +388,7 @@ def calculate():
         except Exception as e:
             error = f"Error: {e}"
     else:
-        # On GET, get the last day of this month when a transaction was made
-        now = datetime.now()
-        last_txn_date = db.session.execute(
-            text("""
-                SELECT MAX(DATE(date))
-                FROM "transactions"
-                WHERE user_id = :user_id
-                  AND type = 'expense'
-                  AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)
-                  AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE)
-            """),
-            {'user_id': current_user.id}
-        ).scalar()
-        if last_txn_date:
-            days_gone = last_txn_date.day
-        else:
-            days_gone = 1
+        days_gone = datetime.now().date().day
         days_left = 30 - days_gone
 
     return render_template(
