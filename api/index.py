@@ -51,7 +51,7 @@ def calc(curr_bal, days_gone, expenses, days_left, save):
     tuple: Per day allowance and projected expenses.
     """
     per_day_allowance = (curr_bal - save) / days_left
-    projected_expenses = (expenses / days_gone) * days_left
+    projected_expenses = expenses+(expenses / days_gone) * days_left
     return per_day_allowance, projected_expenses
 
 @login_manager.user_loader
@@ -356,10 +356,14 @@ def calculate():
     error = None
     days_gone = 1  # default
     days_left = None
-
+    transactions = db.session.execute(
+        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
+        {'user_id': current_user.id}
+    ).fetchall()
+    balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
+    expenses = sum(t.amount for t in transactions if t.type == 'expense')
     if request.method == 'POST':
         try:
-            curr_bal = float(request.form.get('curr_bal', 0))
             now = datetime.now()
             # Get the last day (date) in this month when a transaction was made
             last_txn_date = db.session.execute(
@@ -385,12 +389,11 @@ def calculate():
             else:
                 days_left = int(days_left)
 
-            expenses = float(request.form.get('expenses', 0))
             save = float(request.form.get('save', 0))
-            per_day_allowance, projected_expenses = calc(curr_bal, days_gone, expenses, days_left, save)
+            per_day_allowance, projected_expenses = calc(balance, days_gone, expenses, days_left, save)
             result = {
-                'per_day_allowance': per_day_allowance,
-                'projected_expenses': projected_expenses
+                'per_day_allowance': round(per_day_allowance, 2),
+                'projected_expenses': round(projected_expenses, 2)
             }
         except Exception as e:
             error = f"Error: {e}"
@@ -419,7 +422,9 @@ def calculate():
         username=current_user.username,
         result=result,
         error=error,
-        days_left=days_left  # Pass days_left to use as placeholder
+        days_left=days_left,
+        balance=balance,
+        expenses=expenses
     )
 
 if __name__ == '__main__':

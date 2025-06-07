@@ -131,17 +131,9 @@
         <form method="post" action="/calculate">
             <div class="row g-2">
                 <div class="col-12">
-                    <label for="curr_bal" class="form-label">Current Balance</label>
-                    <input type="number" inputmode="decimal" step="0.01" name="curr_bal" id="curr_bal" class="form-control" required>
-                </div>
-                <div class="col-12">
-                    <label for="expenses" class="form-label">Total Expenses So Far</label>
-                    <input type="number" inputmode="decimal" step="0.01" name="expenses" id="expenses" class="form-control" required>
-                </div>
-                <div class="col-12">
                   <label for="days_left" class="form-label">Days Left</label>
                   <input type="number" name="days_left" id="days_left" class="form-control" 
-                    placeholder="{{ days_left }}" value="{{ request.form.days_left or '' }}" required>
+                    placeholder="{{ days_left }}" value="{{ days_left or '' }}">
                 </div>
                 <div class="col-12">
                     <label for="save" class="form-label">Amount to Save</label>
@@ -156,6 +148,8 @@
 
     {% if result %}
         <div class="alert alert-success mt-4">
+          <p><strong>Balance:</strong> {{ balance }}</p>
+            <p><strong>Expenses:</strong> {{ expenses }}</p>
             <h4>Results:</h4>
             <p><strong>Per Day Allowance:</strong> {{ result.per_day_allowance }}</p>
             <p><strong>Projected Expenses:</strong> {{ result.projected_expenses }}</p>
