@@ -30,7 +30,7 @@ class User(db.Model, UserMixin):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.now())
+    date = db.Column(db.DateTime, default=datetime.now().strftime('%Y-%m-%d'))
     category = db.Column(db.String(50), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     type = db.Column(db.String(10), nullable=False)
@@ -94,12 +94,13 @@ def logout():
 @app.route('/')
 @login_required
 def index():
+    date = datetime.now().strftime('%Y-%m-%d')
     transactions = db.session.execute(
         text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
         {'user_id': current_user.id}
     ).fetchall()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
-    return render_template('index.html', transactions=transactions, balance=balance, username=current_user.username)
+    return render_template('index.html', date=date, transactions=transactions, balance=balance, username=current_user.username)
 
 # Route to add a transaction
 @app.route('/add', methods=['POST'])
@@ -107,8 +108,9 @@ def index():
 def add_transaction():
     category = request.form['category']
     amount = float(request.form['amount'])
+    date = request.form.get('date', datetime.now().strftime('%Y-%m-%d'))
     type = request.form['type']
-    new_transaction = Transaction(category=category, amount=amount, type=type, user_id=current_user.id)
+    new_transaction = Transaction(category=category, amount=amount, date=date, type=type, user_id=current_user.id)
     db.session.add(new_transaction)
     db.session.commit()
     return redirect(url_for('index'))
