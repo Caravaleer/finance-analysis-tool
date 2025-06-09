@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, s
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
@@ -61,16 +62,34 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+from sqlalchemy.exc import IntegrityError
+
 # Route to register a new user
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
+        username = request.form['username'].strip()
+        raw_password = request.form['password']
+        password = bcrypt.generate_password_hash(raw_password).decode('utf-8')
+
         new_user = User(username=username, password=password)
         db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('login'))
+
+        try:
+            db.session.commit()
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+
+        except IntegrityError as e:
+            db.session.rollback()
+            # Check if it's specifically a duplicate username error
+            if 'user_username_key' in str(e.orig):
+                flash('That username is already taken. Please choose another.', 'warning')
+            else:
+                flash('An unexpected error occurred. Please try again.', 'danger')
+            return render_template('register.html', username=username)
+
+    # GET request
     return render_template('register.html')
 
 # Route to log in a user

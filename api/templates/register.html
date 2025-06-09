@@ -8,6 +8,11 @@
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, msg in messages %}
+    <div class="alert alert-{{ category }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
   <div class="container">
     <h2>Register</h2>
     <form method="POST">
