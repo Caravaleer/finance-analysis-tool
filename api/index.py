@@ -354,15 +354,15 @@ def upload_transactions():
     return redirect(url_for('index'))
 
 # Route for downloading all transactions (CSV or Excel)
-@app.route('/download', methods=['GET'])
+@app.route('/download', methods=['GET','POST'])
 @login_required
 def download():
     return render_template('download.html', username=current_user.username)
 
-@app.route('/download_transactions', methods=['GET'])
+@app.route('/download_transactions', methods=['POST'])
 @login_required
 def download_transactions():
-    filetype = request.args.get('filetype', 'csv').lower()
+    filetype = request.form.get('filetype', 'csv').lower()
     transactions = db.session.execute(
         text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
         {'user_id': current_user.id}

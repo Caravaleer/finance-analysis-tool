@@ -6,3 +6,4 @@ flask-bcrypt
 flask-login
 pandas
 xlrd>=2.0.1
+xlsxwriter
