@@ -96,12 +96,20 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
+
         user = User.query.filter_by(username=username).first()
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
             return redirect(url_for('index'))
+        else:
+            # Bad credentials
+            flash('Incorrect username or password. Please try again.', 'warning')
+            # Re-render login page (you might pre-fill username)
+            return render_template('login.html', username=username)
+
+    # GET request
     return render_template('login.html')
 
 # Route to log out a user
