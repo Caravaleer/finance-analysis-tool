@@ -93,9 +93,8 @@
       </button>
 
       <!-- Collapsible Menu -->
-      <div class="collapse navbar-collapse" id="navbarNavDropdown">
-        <!-- Left side links -->
-        <ul class="navbar-nav me-auto">
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
+        <ul class="navbar-nav align-items-md-center ms-auto w-100 justify-content-end">
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('index') }}">Dashboard</a>
           </li>
@@ -108,10 +107,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('download') }}">Download</a>
           </li>
-        </ul>
-
-        <!-- Right side user profile dropdown -->
-        <ul class="navbar-nav ms-auto">
+          <!-- Right side user profile dropdown -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">

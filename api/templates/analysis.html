@@ -70,18 +70,23 @@
   <!-- Navbar with Profile Dropdown -->
   <nav class="navbar navbar-expand-md navbar-dark bg-primary fixed-top">
     <div class="container-fluid">
+      <!-- Brand -->
       <a class="navbar-brand" href="{{ url_for('index') }}">Finance Tracker</a>
+      
+      <!-- Toggler -->
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
               aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      <div class="collapse navbar-collapse" id="navbarNavDropdown">
-        <ul class="navbar-nav me-auto">
+
+      <!-- Collapsible Menu -->
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
+        <ul class="navbar-nav align-items-md-center ms-auto w-100 justify-content-end">
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('index') }}">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" href="{{ url_for('analysis') }}">Analysis</a>
+            <a class="nav-link" href="{{ url_for('analysis') }}">Analysis</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('calculate') }}">Calculate</a>
@@ -89,8 +94,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('download') }}">Download</a>
           </li>
-        </ul>
-        <ul class="navbar-nav ms-auto">
+          <!-- Right side user profile dropdown -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">
