@@ -105,6 +105,9 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('calculate') }}">Calculate</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('download') }}">Download</a>
+          </li>
         </ul>
 
         <!-- Right side user profile dropdown -->
@@ -171,7 +174,7 @@
   
     
     <!-- Toggle Button for View Mode -->
-    <div class="btn-group mb-4 view-toggle" role="group">
+    <div class="btn-group mb-4 view-toggle" role="group" style="margin-top: 24px;">
       <button type="button" class="btn btn-outline-primary active" id="tableViewToggle"><i class="bi bi-table"></i></button>
       <button type="button" class="btn btn-outline-primary" id="cardViewToggle"><i class="bi bi-grid-3x3-gap"></i></button>
     </div>

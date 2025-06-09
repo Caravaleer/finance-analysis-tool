@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, Response
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 from sqlalchemy import text
@@ -9,6 +9,8 @@ from werkzeug.utils import secure_filename
 # For month-wise analysis
 import pandas as pd
 from datetime import datetime
+import io
+import csv
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
@@ -350,6 +352,61 @@ def upload_transactions():
             return redirect(url_for('index'))
 
     return redirect(url_for('index'))
+
+# Route for downloading all transactions (CSV or Excel)
+@app.route('/download', methods=['GET'])
+@login_required
+def download():
+    return render_template('download.html', username=current_user.username)
+
+@app.route('/download_transactions', methods=['GET'])
+@login_required
+def download_transactions():
+    filetype = request.args.get('filetype', 'csv').lower()
+    transactions = db.session.execute(
+        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
+        {'user_id': current_user.id}
+    ).fetchall()
+
+    if filetype in ['excel', 'xlsx']:
+        # Prepare data for Excel
+        data = [{
+            'ID': t.id,
+            'Date': t.date.strftime('%Y-%m-%d') if hasattr(t.date, 'strftime') else t.date,
+            'Category': t.category,
+            'Amount': t.amount,
+            'Type': t.type
+        } for t in transactions]
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Transactions')
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment;filename=transactions.xlsx"}
+        )
+    else:
+        # Default: CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['ID', 'Date', 'Category', 'Amount', 'Type'])
+        for t in transactions:
+            writer.writerow([
+                t.id,
+                t.date.strftime('%Y-%m-%d') if hasattr(t.date, 'strftime') else t.date,
+                t.category,
+                t.amount,
+                t.type
+            ])
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment;filename=transactions.csv"}
+        )
+
 # Route for calculator page
 @app.route('/calculate', methods=['GET', 'POST'])
 @login_required

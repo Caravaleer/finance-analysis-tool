@@ -127,43 +127,24 @@
       </div>
     </div>
   </nav>
-  
-<div class="main-container">
-    <h2 class="text-center mb-4">Calculator</h2>
-    <div class="card p-3">
-        <form method="post" action="/calculate">
-            <div class="row g-2">
-                <div class="col-12">
-                  <label for="days_left" class="form-label">Days Left</label>
-                  <input type="number" name="days_left" id="days_left" class="form-control" 
-                    placeholder="{{ days_left }}" value="{{ days_left or '' }}">
+    <div class="main-container">
+        <h2 class="text-center mb-4">Download Data</h2>
+        <div class="card p-4">
+            <form method="post" action="/download">
+                <div class="mb-3">
+                    <label for="file_format" class="form-label">File Format</label>
+                    <select name="file_format" id="file_format" class="form-select" required>
+                        <option value="" disabled selected>Select format</option>
+                        <option value="csv">CSV</option>
+                        <option value="xlsx">Excel (.xlsx)</option>
+                    </select>
                 </div>
-                <div class="col-12">
-                    <label for="save" class="form-label">Amount to Save</label>
-                    <input type="number" inputmode="decimal" step="0.01" name="save" id="save" class="form-control" required>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Download</button>
                 </div>
-            </div>
-            <div class="text-center mt-3">
-                <button type="submit" class="btn btn-primary">Calculate</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-
-    {% if result %}
-        <div class="alert alert-success mt-4">
-          <p><strong>Balance:</strong> {{ balance }}</p>
-            <p><strong>Expenses:</strong> {{ expenses }}</p>
-            <h4>Results:</h4>
-            <p><strong>Per Day Allowance:</strong> {{ result.per_day_allowance }}</p>
-            <p><strong>Projected Expenses:</strong> {{ result.projected_expenses }}</p>
-        </div>
-    {% endif %}
-    {% if error %}
-        <div class="alert alert-danger mt-4">
-            {{ error }}
-        </div>
-    {% endif %}
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
