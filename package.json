@@ -1,6 +1,0 @@
-{
-    "scripts": {
-      "build": "flask db upgrade && python app.py"
-    }
-  }
-  
