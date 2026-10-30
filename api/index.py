@@ -19,12 +19,34 @@ def get_database_uri():
     if not raw_url:
         return 'sqlite:///finances.db'
 
-    # Fix legacy postgres:// dialect prefix used by older services
+    # Check available drivers
+    try:
+        import psycopg  # noqa: F401
+        has_psycopg3 = True
+    except ImportError:
+        has_psycopg3 = False
+
+    try:
+        import psycopg2  # noqa: F401
+        has_psycopg2 = True
+    except ImportError:
+        has_psycopg2 = False
+
+    # Fix legacy postgres:// dialect prefix
     if raw_url.startswith('postgres://'):
         raw_url = raw_url.replace('postgres://', 'postgresql://', 1)
 
+    # Route to the available driver
+    if raw_url.startswith('postgresql+psycopg://') and not has_psycopg3 and has_psycopg2:
+        raw_url = raw_url.replace('postgresql+psycopg://', 'postgresql+psycopg2://', 1)
+    elif raw_url.startswith('postgresql://'):
+        if not has_psycopg3 and has_psycopg2:
+            raw_url = raw_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+        elif has_psycopg3 and not has_psycopg2:
+            raw_url = raw_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+
     # For remote PostgreSQL (e.g. Supabase), ensure sslmode=require if not already present
-    if 'postgresql://' in raw_url and 'sslmode=' not in raw_url:
+    if 'postgresql' in raw_url and 'sslmode=' not in raw_url:
         separator = '&' if '?' in raw_url else '?'
         raw_url = f"{raw_url}{separator}sslmode=require"
 

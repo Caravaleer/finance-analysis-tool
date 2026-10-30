@@ -1,6 +1,7 @@
 Flask
 Flask-SQLAlchemy
 psycopg2-binary
+psycopg[binary]
 Flask-Migrate
 flask-bcrypt
 flask-login
