@@ -1,4 +1,4 @@
-// Dark Mode Manager
+// Dark Mode Manager - Default Dark Mode with Purple Theme
 (function () {
   const THEME_KEY = 'finance_tracker_theme';
 
@@ -11,7 +11,8 @@
     if (stored) {
       return stored;
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Default to Dark Mode as requested
+    return 'dark';
   }
 
   function setTheme(theme) {
@@ -22,7 +23,7 @@
     // Update Chart.js if present
     if (window.Chart && window.Chart.instances) {
       const textColor = theme === 'dark' ? '#cbd5e1' : '#475569';
-      const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+      const gridColor = theme === 'dark' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(0, 0, 0, 0.08)';
 
       Object.values(window.Chart.instances).forEach(chart => {
         if (chart.options && chart.options.scales) {
@@ -61,11 +62,10 @@
     toggleBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         setTheme(newTheme);
       });
     });
   });
 })();
-

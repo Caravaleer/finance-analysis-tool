@@ -1,0 +1,268 @@
+/* ==========================================================================
+   Sleek Modern Purple Theme - Default Dark Mode
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-family-base: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Brand Purple Palette */
+  --purple-400: #a78bfa;
+  --purple-500: #8b5cf6;
+  --purple-600: #7c3aed;
+  --purple-700: #6d28d9;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  
+  --purple-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  --purple-gradient-hover: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  --purple-glow: 0 0 25px rgba(139, 92, 246, 0.3);
+  --purple-glow-sm: 0 0 12px rgba(139, 92, 246, 0.25);
+
+  --bs-primary: #8b5cf6;
+  --bs-primary-rgb: 139, 92, 246;
+  --bs-link-color: #a78bfa;
+  --bs-link-hover-color: #c4b5fd;
+}
+
+/* ==========================================================================
+   Dark Theme (Default)
+   ========================================================================== */
+[data-bs-theme="dark"], :root {
+  --bs-body-bg: #090d16;
+  --bs-body-color: #f1f5f9;
+  
+  --surface-card: rgba(17, 24, 39, 0.75);
+  --surface-border: rgba(139, 92, 246, 0.2);
+  --surface-hover: rgba(139, 92, 246, 0.08);
+  
+  --navbar-bg: rgba(10, 14, 26, 0.85);
+  --navbar-border: rgba(139, 92, 246, 0.25);
+  
+  --input-bg: #0f1626;
+  --input-border: #26334d;
+  --input-color: #f8fafc;
+  
+  --table-border: rgba(139, 92, 246, 0.12);
+  --table-hover: rgba(139, 92, 246, 0.06);
+}
+
+/* ==========================================================================
+   Light Theme Override (Clean Pastel Violet)
+   ========================================================================== */
+[data-bs-theme="light"] {
+  --bs-body-bg: #f8f7ff;
+  --bs-body-color: #1e1b4b;
+  
+  --surface-card: rgba(255, 255, 255, 0.95);
+  --surface-border: rgba(139, 92, 246, 0.18);
+  --surface-hover: rgba(139, 92, 246, 0.05);
+  
+  --navbar-bg: rgba(255, 255, 255, 0.9);
+  --navbar-border: rgba(139, 92, 246, 0.2);
+  
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-color: #0f172a;
+  
+  --table-border: rgba(139, 92, 246, 0.1);
+  --table-hover: rgba(139, 92, 246, 0.04);
+}
+
+/* Base Typography */
+body {
+  font-family: var(--font-family-base) !important;
+  background-color: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
+  letter-spacing: -0.01em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ==========================================================================
+   Frosted Glass Navbar
+   ========================================================================== */
+.navbar {
+  background: var(--navbar-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid var(--navbar-border) !important;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  padding: 0.75rem 1rem;
+}
+
+.navbar-brand {
+  font-weight: 800 !important;
+  font-size: 1.25rem !important;
+  background: linear-gradient(135deg, #a78bfa 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-brand::before {
+  content: '✦';
+  font-size: 1.1rem;
+  background: var(--purple-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+}
+
+.nav-link {
+  font-weight: 500 !important;
+  color: var(--bs-body-color) !important;
+  opacity: 0.85;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.nav-link:hover {
+  opacity: 1;
+  background: var(--surface-hover);
+  color: var(--purple-400) !important;
+  text-decoration: none !important;
+}
+
+/* ==========================================================================
+   Modern Cards & Containers
+   ========================================================================== */
+.main-container {
+  max-width: 860px;
+  margin-top: 90px;
+  margin-bottom: 50px;
+}
+
+.card {
+  background: var(--surface-card) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.35), 0 0 20px -5px rgba(139, 92, 246, 0.08) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Buttons & Interactive Elements
+   ========================================================================== */
+.btn-primary, .bg-primary {
+  background: var(--purple-gradient) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background: var(--purple-gradient-hover) !important;
+  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  color: var(--purple-400) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary.active,
+.btn-outline-primary.selected {
+  background: var(--purple-gradient) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
+}
+
+.selected {
+  background: var(--purple-gradient) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35) !important;
+}
+
+/* Form inputs */
+.form-control, .form-select {
+  background-color: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
+  color: var(--input-color) !important;
+  border-radius: 12px !important;
+  padding: 0.65rem 1rem !important;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--purple-500) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25) !important;
+}
+
+/* Category round buttons */
+.category-btn {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  color: var(--bs-body-color);
+  transition: all 0.2s ease;
+}
+
+.category-btn:hover {
+  transform: scale(1.08);
+  border-color: var(--purple-500);
+  box-shadow: var(--purple-glow-sm);
+}
+
+/* ==========================================================================
+   Tables & Data Styling
+   ========================================================================== */
+.table {
+  --bs-table-bg: transparent !important;
+  --bs-table-border-color: var(--table-border) !important;
+  color: var(--bs-body-color) !important;
+  vertical-align: middle;
+}
+
+.table tr {
+  transition: background-color 0.2s ease;
+}
+
+.table tr:hover {
+  background-color: var(--table-hover) !important;
+}
+
+/* Badge & Balance Highlights */
+.balance-highlight {
+  background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+  background: var(--surface-card) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
+}
+
+.dropdown-item {
+  color: var(--bs-body-color) !important;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+
+.dropdown-item:hover {
+  background: var(--purple-gradient) !important;
+  color: #fff !important;
+}
+

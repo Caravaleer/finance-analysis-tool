@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -8,6 +8,7 @@
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-purple.css') }}">
   <style>
     /* Navbar styling using Bootstrap */
     .navbar-brand {
@@ -82,7 +83,7 @@
 </head>
 <body>
   <!-- Responsive Navbar with Profile Dropdown -->
-  <nav class="navbar navbar-expand-md navbar-dark bg-primary fixed-top">
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top">
     <div class="container-fluid">
       <!-- Brand -->
       <a class="navbar-brand" href="{{ url_for('index') }}">Finance Tracker</a>
@@ -135,8 +136,16 @@
     <h2 class="text-center mb-4">Finance Tracker</h2>
     
     <!-- Card for Balance & Form -->
-    <div class="card p-3">
-      <h4 class="mb-3">Balance: ₹{{ balance }}</h4>
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+          <span class="text-uppercase small fw-bold text-secondary" style="letter-spacing: 0.08em;">Total Balance</span>
+          <div class="balance-highlight fs-2 fw-bolder mt-1">₹{{ balance }}</div>
+        </div>
+        <span class="badge rounded-pill px-3 py-2" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35);">
+          ✦ Modern Purple
+        </span>
+      </div>
       <form action="/add" method="POST">
         <div class="row g-2">
           <div class="col-12 col-md-6">

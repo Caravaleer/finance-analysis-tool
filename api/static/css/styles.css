@@ -1,131 +1,185 @@
+/* ==========================================================================
+   Login / Register Sleek Purple Theming (Default Dark)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --purple-500: #8b5cf6;
+  --purple-600: #7c3aed;
+  --indigo-500: #6366f1;
+  --purple-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  --purple-gradient-hover: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+}
+
 body {
-  background-color: #f4f4f4;
-  color: #212529;
-  font-family: Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   margin: 0;
   padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #090d16;
+  color: #f1f5f9;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 35px;
+  border-radius: 24px;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 25px rgba(139, 92, 246, 0.15);
   text-align: center;
-  margin: 50px auto;
-  max-width: 400px;
-  width: 100%;
+  max-width: 420px;
+  width: 90%;
   position: relative;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
-}
-
-@media (max-width: 600px) {
-  .container {
-    width: 90%;
-    padding: 20px;
-  }
+  transition: all 0.3s ease;
 }
 
 h2 {
-  margin-bottom: 20px;
+  font-weight: 800;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 25px;
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 label {
   display: block;
-  margin: 10px 0 5px;
+  margin: 12px 0 6px;
   text-align: left;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
 }
 
 input {
   width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background-color: #0f1626;
+  border: 1px solid #26334d;
+  color: #f8fafc;
+  border-radius: 12px;
   box-sizing: border-box;
-  background-color: #fff;
-  color: #212529;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
 }
 
-button {
+input:focus {
+  outline: none;
+  border-color: var(--purple-500);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+  background-color: #131c31;
+}
+
+button[type="submit"] {
   width: 100%;
-  padding: 10px;
-  background-color: #007BFF;
+  padding: 13px;
+  background: var(--purple-gradient);
   border: none;
   color: #fff;
-  font-size: 16px;
-  border-radius: 5px;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  margin-top: 10px;
+  box-shadow: 0 4px 18px rgba(139, 92, 246, 0.4);
+  transition: all 0.2s ease;
 }
 
-button:hover {
-  background-color: #0056b3;
+button[type="submit"]:hover {
+  background: var(--purple-gradient-hover);
+  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.55);
+  transform: translateY(-1px);
 }
 
 p {
-  margin-top: 15px;
+  margin-top: 20px;
+  font-size: 0.875rem;
+  color: #94a3b8;
 }
 
 a {
-  color: #007BFF;
+  color: #a78bfa;
+  font-weight: 600;
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 a:hover {
+  color: #c4b5fd;
   text-decoration: underline;
 }
 
-/* Dark Mode Overrides */
-[data-bs-theme="dark"] body {
-  background-color: #0f172a;
-  color: #f1f5f9;
-}
-
-[data-bs-theme="dark"] .container {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border: 1px solid #334155;
-}
-
-[data-bs-theme="dark"] input {
-  background-color: #0f172a;
-  color: #f8fafc;
-  border-color: #475569;
-}
-
-[data-bs-theme="dark"] input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-
-[data-bs-theme="dark"] a {
-  color: #60a5fa;
-}
-
-/* Standalone theme toggle for login/register */
 .auth-theme-toggle {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: transparent;
-  border: none;
-  width: auto;
-  padding: 5px 8px;
-  font-size: 1.2rem;
-  color: #64748b;
+  top: 18px;
+  right: 18px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #fbbf24;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .auth-theme-toggle:hover {
-  background: transparent;
-  color: #0284c7;
+  background: rgba(139, 92, 246, 0.2);
+  transform: scale(1.08);
 }
 
-[data-bs-theme="dark"] .auth-theme-toggle {
-  color: #fbbf24;
+/* Light Mode Override for Auth */
+[data-bs-theme="light"] body {
+  background-color: #f8f7ff;
+  color: #1e1b4b;
+}
+
+[data-bs-theme="light"] .container {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 20px 40px -15px rgba(139, 92, 246, 0.15);
+}
+
+[data-bs-theme="light"] h2 {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-bs-theme="light"] input {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+[data-bs-theme="light"] input:focus {
+  background-color: #ffffff;
+  border-color: #7c3aed;
+}
+
+[data-bs-theme="light"] label,
+[data-bs-theme="light"] p {
+  color: #64748b;
+}
+
+[data-bs-theme="light"] a {
+  color: #7c3aed;
+}
+
+[data-bs-theme="light"] .auth-theme-toggle {
+  color: #6d28d9;
 }
