@@ -1,22 +1,42 @@
 import os
+import io
+import csv
+import tempfile
+from datetime import datetime
+import pandas as pd
+from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, Response
 from flask_sqlalchemy import SQLAlchemy
-import datetime
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from werkzeug.utils import secure_filename
-# For month-wise analysis
-import pandas as pd
-from datetime import datetime
-import io
-import csv
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', '').replace("postgres://", "postgresql://") + "?sslmode=require"
+
+def get_database_uri():
+    raw_url = os.getenv('DATABASE_URL', '')
+    if not raw_url:
+        return 'sqlite:///finances.db'
+
+    # Fix legacy postgres:// dialect prefix used by older services
+    if raw_url.startswith('postgres://'):
+        raw_url = raw_url.replace('postgres://', 'postgresql://', 1)
+
+    # For remote PostgreSQL (e.g. Supabase), ensure sslmode=require if not already present
+    if 'postgresql://' in raw_url and 'sslmode=' not in raw_url:
+        separator = '&' if '?' in raw_url else '?'
+        raw_url = f"{raw_url}{separator}sslmode=require"
+
+    return raw_url
+
+app.config['SQLALCHEMY_DATABASE_URI'] = get_database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+}
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -25,6 +45,7 @@ login_manager.login_view = 'login'
 
 # User model
 class User(db.Model, UserMixin):
+    __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
@@ -33,36 +54,42 @@ class User(db.Model, UserMixin):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.now().strftime('%Y-%m-%d'))
+    date = db.Column(db.DateTime, default=datetime.now)
     category = db.Column(db.String(50), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     type = db.Column(db.String(10), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-def calc(curr_bal, days_gone, expenses, days_left, save):
-    """
-    Calculate the per day allowance and projected expenses.
-    
-    Parameters:
-    curr_bal (int): Current balance.
-    days_gone (int): Number of effective days gone in the month.
-    expenses (int): Total expenses so far.
-    days_left (int): Number of effective days left in the month.
-    save (int): Amount to save.
+# Auto-create tables on startup/cold-start (in serverless, if __name__ == '__main__' is never executed)
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        app.logger.warning(f"Database initialization notice: {e}")
 
-    Returns:
-    tuple: Per day allowance and projected expenses.
-    """
+@app.route('/init-db')
+def init_db():
+    """Manual endpoint to verify or initialize database tables."""
+    try:
+        db.create_all()
+        return jsonify({
+            "status": "success",
+            "message": "Database tables ('user', 'transactions') created or verified successfully!"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+def calc(curr_bal, days_gone, expenses, days_left, save):
     per_day_allowance = (curr_bal - save) / days_left
-    projected_expenses = expenses+(expenses / days_gone) * days_left
+    projected_expenses = expenses + (expenses / days_gone) * days_left
     return per_day_allowance, projected_expenses
 
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
-
-
-from sqlalchemy.exc import IntegrityError
 
 # Route to register a new user
 @app.route('/register', methods=['GET', 'POST'])
@@ -82,11 +109,17 @@ def register():
 
         except IntegrityError as e:
             db.session.rollback()
-            # Check if it's specifically a duplicate username error
-            if 'user_username_key' in str(e.orig):
+            err_msg = str(e)
+            if 'user_username_key' in err_msg or 'UNIQUE constraint' in err_msg or 'duplicate key' in err_msg:
                 flash('That username is already taken. Please choose another.', 'warning')
             else:
-                flash('An unexpected error occurred. Please try again.', 'danger')
+                flash('An unexpected database constraint error occurred. Please try again.', 'danger')
+            return render_template('register.html', username=username)
+
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error during registration: {e}")
+            flash(f'An error occurred: {str(e)}', 'danger')
             return render_template('register.html', username=username)
 
     # GET request
@@ -99,14 +132,17 @@ def login():
         username = request.form['username'].strip()
         password = request.form['password']
 
-        user = User.query.filter_by(username=username).first()
-        if user and bcrypt.check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('index'))
-        else:
-            # Bad credentials
-            flash('Incorrect username or password. Please try again.', 'warning')
-            # Re-render login page (you might pre-fill username)
+        try:
+            user = User.query.filter_by(username=username).first()
+            if user and bcrypt.check_password_hash(user.password, password):
+                login_user(user)
+                return redirect(url_for('index'))
+            else:
+                flash('Incorrect username or password. Please try again.', 'warning')
+                return render_template('login.html', username=username)
+        except Exception as e:
+            app.logger.error(f"Error during login: {e}")
+            flash(f'An error occurred: {str(e)}', 'danger')
             return render_template('login.html', username=username)
 
     # GET request
@@ -124,10 +160,7 @@ def logout():
 @login_required
 def index():
     date = datetime.now().strftime('%Y-%m-%d')
-    transactions = db.session.execute(
-        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
-        {'user_id': current_user.id}
-    ).fetchall()
+    transactions = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.date.desc()).all()
     balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
     return render_template('index.html', date=date, transactions=transactions, balance=balance, username=current_user.username)
 
@@ -137,7 +170,14 @@ def index():
 def add_transaction():
     category = request.form['category']
     amount = float(request.form['amount'])
-    date = request.form.get('date', datetime.now().strftime('%Y-%m-%d'))
+    date_str = request.form.get('date')
+    if date_str:
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            date = datetime.now()
+    else:
+        date = datetime.now()
     type = request.form['type']
     new_transaction = Transaction(category=category, amount=amount, date=date, type=type, user_id=current_user.id)
     db.session.add(new_transaction)
@@ -164,8 +204,12 @@ def edit_transaction(id):
     transaction.category = request.form['category']
     transaction.amount = float(request.form['amount'])
     transaction.type = request.form['type']
-    # Update date from form (format YYYY-MM-DD)
-    transaction.date = datetime.strptime(request.form['date'], "%Y-%m-%d")
+    date_str = request.form.get('date')
+    if date_str:
+        try:
+            transaction.date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            pass
     db.session.commit()
     return redirect(url_for('index'))
 
@@ -207,7 +251,6 @@ def analysis():
         if selected_category:
             df_category = df_year[df_year['category'] == selected_category].copy()
             df_category['month'] = df_category['date'].dt.strftime('%Y-%m')
-            # Ensure we have all months of the current year.
             all_months = pd.date_range(f'{current_year}-01-01', f'{current_year}-12-01', freq='MS').strftime('%Y-%m')
             yearly_data = df_category.groupby('month')['amount'].sum().reindex(all_months, fill_value=0)
             monthly_labels = list(yearly_data.index)
@@ -225,7 +268,7 @@ def analysis():
                             monthly_labels=monthly_labels,
                             monthly_values=monthly_values)
     else:
-        # Overall analysis (unchanged)
+        # Overall analysis
         total_income = sum(t.amount for t in transactions if t.type == 'income')
         total_expense = sum(t.amount for t in transactions if t.type == 'expense')
         expense_categories = {}
@@ -255,27 +298,17 @@ def get_transactions():
     } for t in transactions]
     return jsonify(transactions_list)
 
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'uploads')
 ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def process_xlsx(file_path):
-    # Read the Excel file with the correct header
-    df = pd.read_excel(file_path, header=0)  # Ensure header is on the first row
-
-    # Strip spaces from column names
+def process_xlsx(file_source):
+    df = pd.read_excel(file_source, header=0)
     df.columns = df.columns.str.strip()
-
-    # Debugging: Print column names to verify
-    print("Column Names:", df.columns)
-
-    # Convert the 'Date' column to datetime format
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce', format='%d/%m/%y')
-
-    # Drop any rows where the Date is NaT (invalid)
     df = df.dropna(subset=['Date'])
 
     transactions = []
@@ -286,7 +319,6 @@ def process_xlsx(file_path):
             withdrawal = row['Withdrawal Amt.'] if not pd.isna(row['Withdrawal Amt.']) else 0
             deposit = row['Deposit Amt.'] if not pd.isna(row['Deposit Amt.']) else 0
 
-            # Determine transaction type
             if withdrawal > 0:
                 amount = withdrawal
                 txn_type = "expense"
@@ -314,71 +346,59 @@ def upload_transactions():
         return redirect(request.url)
 
     file = request.files['file']
-    if file.filename == '':
-        flash('No selected file', 'error')
+    if file.filename == '' or not allowed_file(file.filename):
+        flash('No selected file or unsupported file type. Please upload .xls or .xlsx.', 'error')
         return redirect(request.url)
 
-    if file:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
-        file.save(file_path)
+    try:
+        # Read in memory using BytesIO to remain compatible with Vercel serverless read-only filesystem
+        file_bytes = io.BytesIO(file.read())
+        df = pd.read_excel(file_bytes)
 
-        try:
-            df = pd.read_excel(file_path)
+        # Ensure column names are clean
+        df.columns = df.columns.str.strip()
 
-            # Ensure column names are clean
-            df.columns = df.columns.str.strip()
-            print("Columns:", repr(df.columns))  # Debugging output
+        transactions = []
+        for _, row in df.iterrows():
+            try:
+                date = pd.to_datetime(row['Date'], format='%d/%m/%y', errors='coerce')
+                if pd.isna(date):
+                    continue
 
-            transactions = []
+                narration = str(row.get('Narration', '')).strip()
+                withdrawal = row.get('Withdrawal Amt.', 0) if not pd.isna(row.get('Withdrawal Amt.', 0)) else 0
+                deposit = row.get('Deposit Amt.', 0) if not pd.isna(row.get('Deposit Amt.', 0)) else 0
 
-            for _, row in df.iterrows():
-                try:
-                    date = pd.to_datetime(row['Date'], format='%d/%m/%y', errors='coerce')
+                amount = deposit if deposit > 0 else withdrawal
+                trans_type = "income" if deposit > 0 else "expense"
 
-                    # Ensure date is valid
-                    if pd.isna(date):
-                        print(f"Skipping invalid date in row: {row}")
-                        continue
+                transaction = Transaction(
+                    date=date,
+                    category=narration[:50],
+                    amount=float(amount),
+                    type=trans_type,
+                    user_id=current_user.id
+                )
 
-                    narration = row.get('Narration', '').strip()
-                    withdrawal = row.get('Withdrawal Amt.', 0) if not pd.isna(row.get('Withdrawal Amt.', 0)) else 0
-                    deposit = row.get('Deposit Amt.', 0) if not pd.isna(row.get('Deposit Amt.', 0)) else 0
+                db.session.add(transaction)
+                transactions.append(transaction)
 
-                    # Determine transaction type and amount
-                    amount = deposit if deposit > 0 else withdrawal
-                    trans_type = "income" if deposit > 0 else "expense"
+            except Exception as e:
+                print(f"Error processing row: {row}\nError: {e}")
 
-                    transaction = Transaction(
-                        date=date,
-                        category=narration[:50],
-                        amount=amount,
-                        type=trans_type,
-                        user_id=current_user.id
-                    )
-
-                    db.session.add(transaction)  # Add each transaction separately
-                    db.session.flush()  # Ensure it's written to the DB buffer
-
-                    transactions.append(transaction)
-
-                except Exception as e:
-                    print(f"Error processing row: {row}\nError: {e}")
-
-            if not transactions:
-                flash("No valid transactions found in the file.", "warning")
-                return redirect(url_for('index'))
-
-            db.session.commit()  # Commit all transactions at once
-            flash("Transactions uploaded successfully!", "success")
+        if not transactions:
+            flash("No valid transactions found in the file.", "warning")
             return redirect(url_for('index'))
 
-        except Exception as e:
-            db.session.rollback()  # Rollback in case of failure
-            print(f"Error during upload: {e}")
-            flash(f"An error occurred: {e}", "danger")
-            return redirect(url_for('index'))
+        db.session.commit()
+        flash("Transactions uploaded successfully!", "success")
+        return redirect(url_for('index'))
 
-    return redirect(url_for('index'))
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error during upload: {e}")
+        flash(f"An error occurred: {e}", "danger")
+        return redirect(url_for('index'))
 
 # Route for downloading all transactions (CSV or Excel)
 @app.route('/download', methods=['GET','POST'])
