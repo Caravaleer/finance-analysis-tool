@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Bootstrap Icons CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   <style>
     /* Navbar styling (same as index.html) */
     .navbar-brand {
@@ -93,6 +94,12 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('download') }}">Download</a>
+          </li>
+                    <!-- Dark Mode Toggle -->
+          <li class="nav-item me-2">
+            <button class="btn btn-link nav-link p-2 theme-toggle-btn" type="button" title="Toggle Dark/Light Mode">
+              <i class="bi bi-moon-stars-fill theme-toggle-icon fs-5"></i>
+            </button>
           </li>
           <!-- Right side user profile dropdown -->
           <li class="nav-item dropdown">
