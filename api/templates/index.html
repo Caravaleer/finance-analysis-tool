@@ -33,8 +33,8 @@
     
     /* Main container styling */
     .main-container {
-      max-width: 800px;
-      margin-top: 80px; /* offset for fixed navbar */
+      max-width: 860px;
+      margin-top: 85px;
       margin-bottom: 40px;
       margin-left: auto;
       margin-right: auto;
@@ -44,12 +44,7 @@
       margin-bottom: 20px;
     }
     
-    /* Existing styles for buttons and groups */
-    .selected {
-      background-color: var(--bs-btn-hover-bg);
-      border-color: var(--bs-btn-hover-border-color);
-      color: var(--bs-btn-hover-color);
-    }
+    /* Button group styling */
     .button-group {
       display: flex;
       gap: 10px;
@@ -57,11 +52,11 @@
     }
     .type-btn {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
     }
     .category-btn {
-      width: 50px;
-      height: 50px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -78,6 +73,34 @@
     /* Table responsiveness */
     .table-responsive {
       overflow-x: auto;
+    }
+
+    /* Batch Entry Row Styles */
+    .batch-row {
+      background: rgba(139, 92, 246, 0.04);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+    }
+    .batch-row:hover {
+      border-color: rgba(139, 92, 246, 0.35);
+      background: rgba(139, 92, 246, 0.07);
+    }
+    .chip-btn {
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      color: var(--purple-400);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chip-btn:hover {
+      background: rgba(139, 92, 246, 0.25);
+      transform: translateY(-1px);
     }
   </style>
 </head>
@@ -98,7 +121,7 @@
       <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
         <ul class="navbar-nav align-items-md-center ms-auto w-100 justify-content-end">
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('index') }}">Dashboard</a>
+            <a class="nav-link active" href="{{ url_for('index') }}">Dashboard</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('analysis') }}">Analysis</a>
@@ -109,7 +132,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('download') }}">Download</a>
           </li>
-                    <!-- Dark Mode Toggle -->
+          <!-- Dark Mode Toggle -->
           <li class="nav-item me-2">
             <button class="btn btn-link nav-link p-2 theme-toggle-btn" type="button" title="Toggle Dark/Light Mode">
               <i class="bi bi-moon-stars-fill theme-toggle-icon fs-5"></i>
@@ -133,62 +156,213 @@
   </nav>
   
   <div class="main-container">
-    <h2 class="text-center mb-4">Finance Tracker</h2>
+    <!-- Flashed messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0 fw-bold">Finance Tracker</h2>
+      <span class="badge rounded-pill px-3 py-2" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35);">
+        ✦ Live Dashboard
+      </span>
+    </div>
     
-    <!-- Card for Balance & Form -->
+    <!-- Card for Balance & Forms -->
     <div class="card p-4">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 pb-3 border-bottom border-secondary border-opacity-25">
         <div>
           <span class="text-uppercase small fw-bold text-secondary" style="letter-spacing: 0.08em;">Total Balance</span>
-          <div class="balance-highlight fs-2 fw-bolder mt-1">₹{{ balance }}</div>
+          <div class="balance-highlight fs-2 fw-bolder mt-0.5">₹{{ balance }}</div>
         </div>
-        <span class="badge rounded-pill px-3 py-2" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35);">
-          ✦ Modern Purple
-        </span>
+        
+        <!-- Entry Mode Switcher Pills -->
+        <ul class="nav nav-pills p-1 rounded-pill bg-body-tertiary" id="entryTabs" role="tablist" style="border: 1px solid var(--surface-border);">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-3 py-1.5 fw-semibold text-sm" id="single-tab" data-bs-toggle="pill" data-bs-target="#single-entry" type="button" role="tab">
+              <i class="bi bi-plus-circle me-1"></i> Quick Entry
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-sm" id="batch-tab" data-bs-toggle="pill" data-bs-target="#batch-entry" type="button" role="tab">
+              <i class="bi bi-calendar2-range me-1"></i> Multi-Entry (Batch by Date)
+              <span class="badge rounded-pill ms-1" style="background: rgba(139, 92, 246, 0.3); color: #fff;">Multi</span>
+            </button>
+          </li>
+        </ul>
       </div>
-      <form action="/add" method="POST">
-        <div class="row g-2">
-          <div class="col-12 col-md-6">
-            <input type="number" inputmode="decimal" step="0.01" name="amount" class="form-control" placeholder="₹ Amount" required>
+
+      <div class="tab-content" id="entryTabsContent">
+        <!-- TAB 1: Single Entry -->
+        <div class="tab-pane fade show active" id="single-entry" role="tabpanel">
+          <form action="/add" method="POST">
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-secondary">Amount</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" inputmode="decimal" step="0.01" name="amount" class="form-control" placeholder="0.00" required>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-secondary">Date</label>
+                <input type="date" class="form-control" name="date" value="{{date}}" required>
+              </div>
+            </div>
+
+            <div class="row g-2 mt-2">
+              <div class="col-12">
+                <label class="form-label small fw-semibold text-secondary">Category</label>
+                <input type="text" id="category" name="category" class="form-control" placeholder="Enter custom category (or choose icon below)" list="commonCategories" required>
+              </div>
+            </div>
+
+            <div class="button-group mt-3">
+              <input type="hidden" id="type" name="type" value="expense">
+              <button type="button" class="btn btn-outline-success type-btn" data-type="income">💰 Income</button>
+              <button type="button" class="btn btn-outline-danger type-btn selected" data-type="expense">💸 Expense</button>
+            </div>
+
+            <div class="button-group mt-3 flex-wrap">
+              <button type="button" class="btn btn-outline-primary category-btn" data-category="Food" title="Food">🍔</button>
+              <button type="button" class="btn btn-outline-success category-btn" data-category="Travel" title="Travel">✈️</button>
+              <button type="button" class="btn btn-outline-warning category-btn" data-category="Study" title="Study">📚</button>
+              <button type="button" class="btn btn-outline-info category-btn" data-category="Grocery" title="Grocery">🛒</button>
+              <button type="button" class="btn btn-outline-secondary category-btn" data-category="Misc" title="Misc">🔹</button>
+            </div>
+
+            <div class="text-center mt-4">
+              <button type="submit" class="btn btn-primary px-4 py-2">Add Transaction</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 2: Multi-Entry (Batch by Date) -->
+        <div class="tab-pane fade" id="batch-entry" role="tabpanel">
+          <form action="/batch_add" method="POST" id="batchForm">
+            <!-- Step 1: Set Date ONCE for all entries -->
+            <div class="p-3 rounded-3 mb-3" style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2);">
+              <div class="row align-items-center g-2">
+                <div class="col-12 col-md-5">
+                  <label class="form-label small fw-bold text-secondary mb-1">
+                    <i class="bi bi-calendar-event text-primary me-1"></i> Date for all entries:
+                  </label>
+                  <input type="date" id="batchDateInput" name="batch_date" class="form-control fw-bold" value="{{ date }}" required>
+                </div>
+                <div class="col-12 col-md-7 d-flex justify-content-md-end align-items-center gap-2 mt-2 mt-md-0 flex-wrap">
+                  <div id="batchStatsPill" class="small px-3 py-1.5 rounded-pill" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.25);">
+                    <span id="batchCountBadge">1 item</span> • Net: <strong id="batchNetBadge">₹0.00</strong>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="addBatchRowBtn">
+                    <i class="bi bi-plus-lg me-1"></i> Add Entry
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Add Category Chips -->
+            <div class="mb-3 d-flex align-items-center gap-1.5 flex-wrap">
+              <span class="small text-secondary me-1">Quick Add:</span>
+              <button type="button" class="chip-btn" onclick="addBatchRowWithData('Groceries', 'expense')">+ Groceries</button>
+              <button type="button" class="chip-btn" onclick="addBatchRowWithData('Dining / Food', 'expense')">+ Food</button>
+              <button type="button" class="chip-btn" onclick="addBatchRowWithData('Fuel / Petrol', 'expense')">+ Fuel</button>
+              <button type="button" class="chip-btn" onclick="addBatchRowWithData('Electricity Bill', 'expense')">+ Bills</button>
+              <button type="button" class="chip-btn" onclick="addBatchRowWithData('Salary / Client Payment', 'income')">+ Income</button>
+              <button type="button" class="chip-btn" onclick="addBatchRowWithData('Shopping', 'expense')">+ Shopping</button>
+            </div>
+
+            <!-- Dynamic Rows List -->
+            <div id="batchRowsContainer">
+              <!-- Initial Row 1 -->
+              <div class="batch-row">
+                <div class="row g-2 align-items-center">
+                  <div class="col-12 col-md-5">
+                    <label class="form-label small text-secondary mb-1">Custom Category</label>
+                    <input type="text" name="category[]" class="form-control batch-category" placeholder="e.g. Groceries, Rent, Salary" list="commonCategories" required>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label small text-secondary mb-1">Type</label>
+                    <select name="type[]" class="form-select batch-type">
+                      <option value="expense">💸 Expense</option>
+                      <option value="income">💰 Income</option>
+                    </select>
+                  </div>
+                  <div class="col-4 col-md-3">
+                    <label class="form-label small text-secondary mb-1">Amount</label>
+                    <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" step="0.01" min="0.01" name="amount[]" class="form-control batch-amount" placeholder="0.00" required>
+                    </div>
+                  </div>
+                  <div class="col-2 col-md-1 text-end mt-4">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-batch-row-btn p-1 px-2 rounded-pill" title="Remove entry" disabled>
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-25 flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="addAnotherBtn">
+                <i class="bi bi-plus-circle me-1"></i> Add Another Row
+              </button>
+              <button type="submit" class="btn btn-primary px-4 py-2" id="submitBatchBtn">
+                <i class="bi bi-check2-circle me-1"></i> Save All Entries
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Suggestions Datalist -->
+    <datalist id="commonCategories">
+      <option value="Food & Dining">
+      <option value="Groceries">
+      <option value="Travel & Commute">
+      <option value="Shopping & Clothes">
+      <option value="Salary & Wages">
+      <option value="Freelance Client">
+      <option value="Electricity / Utilities">
+      <option value="Rent & Housing">
+      <option value="Health & Medical">
+      <option value="Entertainment & Movies">
+      <option value="Fuel / Petrol">
+      <option value="Education & Books">
+      <option value="Investments / Stocks">
+      <option value="Personal Care">
+      <option value="Gifts & Donations">
+    </datalist>
+
+    <div class="d-flex justify-content-center align-items-center mb-4">
+      <form action="{{ url_for('upload_transactions') }}" method="post" enctype="multipart/form-data" class="p-3 card w-100">
+        <div class="row align-items-center g-2">
+          <div class="col-12 col-md-8">
+            <label for="file" class="form-label small fw-semibold text-secondary mb-1">
+              <i class="bi bi-file-earmark-excel me-1 text-success"></i> Bulk Upload from Excel (.xls, .xlsx)
+            </label>
+            <input type="file" name="file" accept=".xls,.xlsx" class="form-control" required>
           </div>
-          <div class="col-12 col-md-6">
-            <input type="date" class="form-control" name="date" value="{{date}}" required>
+          <div class="col-12 col-md-4 mt-md-4">
+            <button type="submit" class="btn btn-outline-primary w-100">Upload File</button>
           </div>
-        </div>
-        <div class="button-group mt-3">
-          <input type="hidden" id="type" name="type" value="expense">
-          <button type="button" class="btn btn-outline-success type-btn" data-type="income">💰 Income</button>
-          <button type="button" class="btn btn-outline-danger type-btn selected" data-type="expense">💸 Expense</button>
-        </div>
-        <div class="button-group mt-3">
-          <input type="hidden" id="category" name="category">
-          <button type="button" class="btn btn-outline-primary category-btn" data-category="Food">🍔</button>
-          <button type="button" class="btn btn-outline-success category-btn" data-category="Travel">✈️</button>
-          <button type="button" class="btn btn-outline-warning category-btn" data-category="Study">📚</button>
-          <button type="button" class="btn btn-outline-info category-btn" data-category="Grocery">🛒</button>
-          <button type="button" class="btn btn-outline-secondary category-btn" data-category="Misc">🔹</button>
-        </div>
-        <div class="text-center mt-3">
-          <button type="submit" class="btn btn-primary">Add Transaction</button>
         </div>
       </form>
     </div>
-
-    <div class="d-flex justify-content-center align-items-center">
-      <form action="{{ url_for('upload_transactions') }}" method="post" enctype="multipart/form-data" class="p-4 border rounded">
-          <div class="mb-3">
-              <label for="file" class="form-label">Upload Transactions</label>
-              <input type="file" name="file" accept=".xls,.xlsx" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Upload Transactions</button>
-      </form>
-  </div>
-  
     
     <!-- Toggle Button for View Mode -->
-    <div class="btn-group mb-4 view-toggle" role="group" style="margin-top: 24px;">
-      <button type="button" class="btn btn-outline-primary active" id="tableViewToggle"><i class="bi bi-table"></i></button>
-      <button type="button" class="btn btn-outline-primary" id="cardViewToggle"><i class="bi bi-grid-3x3-gap"></i></button>
+    <div class="btn-group mb-4 view-toggle" role="group">
+      <button type="button" class="btn btn-outline-primary active" id="tableViewToggle"><i class="bi bi-table"></i> Table View</button>
+      <button type="button" class="btn btn-outline-primary" id="cardViewToggle"><i class="bi bi-grid-3x3-gap"></i> Cards View</button>
     </div>
     
     <!-- Table View for Transactions -->
@@ -208,28 +382,35 @@
             <tbody>
               {% for transaction in transactions %}
               <tr>
-                <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}</td>
+                <td><span class="fw-medium">{{ transaction.category }}</span></td>
+                <td class="fw-bold">{{ '₹' + transaction.amount|string }}</td>
                 <td>
-                  {% if transaction.category == 'Food' %} 🍔 Food
-                  {% elif transaction.category == 'Travel' %} ✈️ Travel
-                  {% elif transaction.category == 'Study' %} 📚 Study
-                  {% elif transaction.category == 'Grocery' %} 🛒 Grocery
-                  {% else %} 🔹 Misc {% endif %}
+                  {% if transaction.type == 'income' %}
+                    <span class="badge bg-success bg-opacity-75">Income</span>
+                  {% else %}
+                    <span class="badge bg-danger bg-opacity-75">Expense</span>
+                  {% endif %}
                 </td>
-                <td>₹{{ transaction.amount }}</td>
-                <td class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">{{ transaction.type.capitalize() }}</td>
                 <td>
-                  <button class="btn btn-warning btn-sm edit-btn"
-                    data-id="{{ transaction.id }}"
-                    data-date="{{ transaction.date.strftime('%Y-%m-%d') }}"
-                    data-category="{{ transaction.category }}"
-                    data-amount="{{ transaction.amount }}"
-                    data-type="{{ transaction.type }}"
-                  >
-                    Edit
+                  <button class="btn btn-sm btn-outline-primary edit-btn"
+                          data-id="{{ transaction.id }}"
+                          data-date="{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}"
+                          data-category="{{ transaction.category }}"
+                          data-amount="{{ transaction.amount }}"
+                          data-type="{{ transaction.type }}">
+                    <i class="bi bi-pencil-square"></i>
                   </button>
-                  <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
+                  <form action="{{ url_for('delete_transaction', id=transaction.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this transaction?');">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
                 </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No transactions found. Log your first transaction above!</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -238,65 +419,67 @@
       </div>
     </div>
     
-    <!-- Card View for Transactions (initially hidden) -->
+    <!-- Card View for Transactions -->
     <div id="cardView" style="display: none;">
       {% for transaction in transactions %}
-      <div class="card p-3 mb-3">
-        <h5 class="mb-2">{{ transaction.date.strftime('%Y-%m-%d') }}</h5>
-        <p class="mb-1">
-          {% if transaction.category == 'Food' %} 🍔 Food
-          {% elif transaction.category == 'Travel' %} ✈️ Travel
-          {% elif transaction.category == 'Study' %} 📚 Study
-          {% elif transaction.category == 'Grocery' %} 🛒 Grocery
-          {% else %} 🔹 Misc {% endif %}
-        </p>
-        <p class="mb-1">Amount: ₹{{ transaction.amount }}</p>
-        <p class="mb-1 {% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">Type: {{ transaction.type.capitalize() }}</p>
-        <div class="d-flex gap-2 justify-content-end mt-2">
-          <button class="btn btn-warning btn-sm edit-btn"
-            data-id="{{ transaction.id }}"
-            data-date="{{ transaction.date.strftime('%Y-%m-%d') }}"
-            data-category="{{ transaction.category }}"
-            data-amount="{{ transaction.amount }}"
-            data-type="{{ transaction.type }}"
-          >
-            Edit
-          </button>
-          <a href="/delete/{{ transaction.id }}" class="btn btn-danger btn-sm">Delete</a>
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-1 fw-bold">{{ transaction.category }}</h5>
+              <p class="text-muted small mb-0">{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}</p>
+            </div>
+            <div class="text-end">
+              <h5 class="mb-1 fw-bold {{ 'text-success' if transaction.type == 'income' else 'text-danger' }}">
+                {{ '+' if transaction.type == 'income' else '-' }}₹{{ transaction.amount }}
+              </h5>
+              <span class="badge {{ 'bg-success' if transaction.type == 'income' else 'bg-danger' }} bg-opacity-75">
+                {{ transaction.type|capitalize }}
+              </span>
+            </div>
+          </div>
+          <div class="mt-3 text-end border-top pt-2">
+            <button class="btn btn-sm btn-outline-primary edit-btn"
+                    data-id="{{ transaction.id }}"
+                    data-date="{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}"
+                    data-category="{{ transaction.category }}"
+                    data-amount="{{ transaction.amount }}"
+                    data-type="{{ transaction.type }}">
+              Edit
+            </button>
+            <form action="{{ url_for('delete_transaction', id=transaction.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this transaction?');">
+                Delete
+              </button>
+            </form>
+          </div>
         </div>
       </div>
       {% endfor %}
     </div>
   </div>
-  
-  <!-- Bootstrap Modal for Editing Transaction -->
+
+  <!-- Edit Modal -->
   <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog">
       <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">Edit Transaction</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <form id="editForm" method="POST">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editModalLabel">Edit Transaction</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
           <div class="modal-body">
-            <!-- Date Field -->
             <div class="mb-3">
               <label for="editDate" class="form-label">Date</label>
               <input type="date" class="form-control" id="editDate" name="date" required>
             </div>
             <div class="mb-3">
-              <label for="editAmount" class="form-label">Amount (₹)</label>
+              <label for="editAmount" class="form-label">Amount</label>
               <input type="number" step="0.01" class="form-control" id="editAmount" name="amount" required>
             </div>
             <div class="mb-3">
               <label for="editCategory" class="form-label">Category</label>
-              <select class="form-select" id="editCategory" name="category" required>
-                <option value="Food">🍔 Food</option>
-                <option value="Travel">✈️ Travel</option>
-                <option value="Study">📚 Study</option>
-                <option value="Grocery">🛒 Grocery</option>
-                <option value="Misc">🔹 Misc</option>
-              </select>
+              <input type="text" class="form-control" id="editCategory" name="category" list="commonCategories" required>
             </div>
             <div class="mb-3">
               <label for="editType" class="form-label">Type</label>
@@ -331,10 +514,11 @@
       document.getElementById('tableViewToggle').classList.remove('active');
     });
     
-    // Category & Type button behavior
+    // Category & Type button behavior for Quick Entry
     document.querySelectorAll(".category-btn").forEach((button) => {
       button.addEventListener("click", function () {
-        document.getElementById("category").value = this.getAttribute("data-category");
+        const cat = this.getAttribute("data-category");
+        document.getElementById("category").value = cat;
         document.querySelectorAll(".category-btn").forEach((btn) => btn.classList.remove("selected"));
         this.classList.add("selected");
       });
@@ -364,6 +548,128 @@
         editModal.show();
       });
     });
+
+    // ==========================================
+    // Multi-Entry (Batch by Date) Logic
+    // ==========================================
+    const batchRowsContainer = document.getElementById('batchRowsContainer');
+    const addBatchRowBtn = document.getElementById('addBatchRowBtn');
+    const addAnotherBtn = document.getElementById('addAnotherBtn');
+    const batchCountBadge = document.getElementById('batchCountBadge');
+    const batchNetBadge = document.getElementById('batchNetBadge');
+    const submitBatchBtn = document.getElementById('submitBatchBtn');
+
+    function createBatchRow(categoryVal = '', typeVal = 'expense', amountVal = '') {
+      const row = document.createElement('div');
+      row.className = 'batch-row';
+      row.innerHTML = `
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-md-5">
+            <label class="form-label small text-secondary mb-1">Custom Category</label>
+            <input type="text" name="category[]" class="form-control batch-category" placeholder="e.g. Groceries, Rent, Salary" list="commonCategories" value="${categoryVal}" required>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1">Type</label>
+            <select name="type[]" class="form-select batch-type">
+              <option value="expense" ${typeVal === 'expense' ? 'selected' : ''}>💸 Expense</option>
+              <option value="income" ${typeVal === 'income' ? 'selected' : ''}>💰 Income</option>
+            </select>
+          </div>
+          <div class="col-4 col-md-3">
+            <label class="form-label small text-secondary mb-1">Amount</label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <input type="number" step="0.01" min="0.01" name="amount[]" class="form-control batch-amount" placeholder="0.00" value="${amountVal}" required>
+            </div>
+          </div>
+          <div class="col-2 col-md-1 text-end mt-4">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-batch-row-btn p-1 px-2 rounded-pill" title="Remove entry">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Attach row event listeners
+      const removeBtn = row.querySelector('.remove-batch-row-btn');
+      removeBtn.addEventListener('click', () => {
+        const totalRows = batchRowsContainer.querySelectorAll('.batch-row').length;
+        if (totalRows > 1) {
+          row.remove();
+          updateBatchSummary();
+        }
+      });
+
+      const amountInput = row.querySelector('.batch-amount');
+      const typeSelect = row.querySelector('.batch-type');
+      amountInput.addEventListener('input', updateBatchSummary);
+      typeSelect.addEventListener('change', updateBatchSummary);
+
+      return row;
+    }
+
+    function addBatchRowWithData(category = '', type = 'expense', amount = '') {
+      const newRow = createBatchRow(category, type, amount);
+      batchRowsContainer.appendChild(newRow);
+      updateBatchSummary();
+      const amountInput = newRow.querySelector('.batch-amount');
+      if (amountInput) amountInput.focus();
+    }
+
+    function updateBatchSummary() {
+      const rows = batchRowsContainer.querySelectorAll('.batch-row');
+      const count = rows.length;
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      rows.forEach(r => {
+        const amt = parseFloat(r.querySelector('.batch-amount').value) || 0;
+        const typ = r.querySelector('.batch-type').value;
+        if (typ === 'income') {
+          totalIncome += amt;
+        } else {
+          totalExpense += amt;
+        }
+      });
+
+      const net = totalIncome - totalExpense;
+      const netFormatted = (net >= 0 ? '+' : '-') + '₹' + Math.abs(net).toFixed(2);
+
+      batchCountBadge.textContent = `${count} item${count > 1 ? 's' : ''}`;
+      batchNetBadge.textContent = netFormatted;
+      submitBatchBtn.innerHTML = `<i class="bi bi-check2-circle me-1"></i> Save All Entries (${count})`;
+
+      // Enable/disable remove button based on row count
+      rows.forEach(r => {
+        const removeBtn = r.querySelector('.remove-batch-row-btn');
+        if (removeBtn) {
+          removeBtn.disabled = (count <= 1);
+        }
+      });
+    }
+
+    if (addBatchRowBtn) {
+      addBatchRowBtn.addEventListener('click', () => addBatchRowWithData());
+    }
+    if (addAnotherBtn) {
+      addAnotherBtn.addEventListener('click', () => addBatchRowWithData());
+    }
+
+    // Attach initial row listeners
+    const initialRemoveBtn = batchRowsContainer.querySelector('.remove-batch-row-btn');
+    if (initialRemoveBtn) {
+      initialRemoveBtn.addEventListener('click', function() {
+        const totalRows = batchRowsContainer.querySelectorAll('.batch-row').length;
+        if (totalRows > 1) {
+          this.closest('.batch-row').remove();
+          updateBatchSummary();
+        }
+      });
+    }
+    const initialAmount = batchRowsContainer.querySelector('.batch-amount');
+    const initialType = batchRowsContainer.querySelector('.batch-type');
+    if (initialAmount) initialAmount.addEventListener('input', updateBatchSummary);
+    if (initialType) initialType.addEventListener('change', updateBatchSummary);
   </script>
 </body>
 </html>

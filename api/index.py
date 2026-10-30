@@ -14,6 +14,17 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 
 app = Flask(__name__)
 
+# Jinja template helpers
+app.jinja_env.globals['hasattr'] = hasattr
+
+@app.template_filter('format_date')
+def format_date(value):
+    if not value:
+        return ''
+    if hasattr(value, 'strftime'):
+        return value.strftime('%Y-%m-%d')
+    return str(value)[:10]
+
 def get_database_uri():
     raw_url = os.getenv('DATABASE_URL', '')
     if not raw_url:
@@ -204,6 +215,65 @@ def add_transaction():
     new_transaction = Transaction(category=category, amount=amount, date=date, type=type, user_id=current_user.id)
     db.session.add(new_transaction)
     db.session.commit()
+    return redirect(url_for('index'))
+
+# Route to batch add multiple transactions for a specific date
+@app.route('/batch_add', methods=['POST'])
+@login_required
+def batch_add():
+    date_str = request.form.get('batch_date') or request.form.get('date')
+    if date_str:
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+        except (ValueError, TypeError):
+            date = datetime.now()
+    else:
+        date = datetime.now()
+
+    categories = request.form.getlist('category[]')
+    if not categories:
+        categories = request.form.getlist('category')
+
+    amounts = request.form.getlist('amount[]')
+    if not amounts:
+        amounts = request.form.getlist('amount')
+
+    types = request.form.getlist('type[]')
+    if not types:
+        types = request.form.getlist('type')
+
+    added_count = 0
+    for cat, amt, typ in zip(categories, amounts, types):
+        cat_clean = str(cat).strip()
+        if not cat_clean:
+            continue
+        try:
+            amt_val = float(amt)
+        except (ValueError, TypeError):
+            continue
+        if amt_val <= 0:
+            continue
+
+        typ_clean = str(typ).strip().lower()
+        if typ_clean not in ['income', 'expense']:
+            typ_clean = 'expense'
+
+        new_transaction = Transaction(
+            category=cat_clean[:50],
+            amount=amt_val,
+            date=date,
+            type=typ_clean,
+            user_id=current_user.id
+        )
+        db.session.add(new_transaction)
+        added_count += 1
+
+    if added_count > 0:
+        db.session.commit()
+        flash(f"Successfully added {added_count} transactions for {date.strftime('%b %d, %Y')}!", 'success')
+    else:
+        flash("No valid transactions found to add. Please check the entries.", 'warning')
+
     return redirect(url_for('index'))
 
 # Route to delete a transaction
