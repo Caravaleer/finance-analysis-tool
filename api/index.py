@@ -193,9 +193,25 @@ def logout():
 @login_required
 def index():
     date = datetime.now().strftime('%Y-%m-%d')
-    transactions = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.date.desc()).all()
-    balance = sum(t.amount if t.type == 'income' else -t.amount for t in transactions)
-    return render_template('index.html', date=date, transactions=transactions, balance=balance, username=current_user.username)
+    # Compute global balance and total count directly in DB
+    totals_query = text("""
+        SELECT
+            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0) AS balance,
+            COUNT(*) AS total_count
+        FROM transactions
+        WHERE user_id = :user_id
+    """)
+    totals_row = db.session.execute(totals_query, {'user_id': current_user.id}).fetchone()
+    balance = round(float(totals_row[0]), 2)
+    total_count = int(totals_row[1])
+
+    return render_template(
+        'index.html',
+        date=date,
+        balance=balance,
+        total_count=total_count,
+        username=current_user.username
+    )
 
 # Route to add a transaction
 @app.route('/add', methods=['POST'])
@@ -277,13 +293,17 @@ def batch_add():
     return redirect(url_for('index'))
 
 # Route to delete a transaction
-@app.route('/delete/<int:id>')
+@app.route('/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_transaction(id):
     transaction = db.session.get(Transaction, id)
     if transaction and transaction.user_id == current_user.id:
         db.session.delete(transaction)
         db.session.commit()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True, 'id': id})
+    elif request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return jsonify({'error': 'Transaction not found'}), 404
     return redirect(url_for('index'))
 
 # Route to edit a transaction (including editing the date)
@@ -292,96 +312,176 @@ def delete_transaction(id):
 def edit_transaction(id):
     transaction = db.session.get(Transaction, id)
     if not transaction or transaction.user_id != current_user.id:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'error': 'Transaction not found'}), 404
         return redirect(url_for('index'))
-    transaction.category = request.form['category']
-    transaction.amount = float(request.form['amount'])
-    transaction.type = request.form['type']
-    date_str = request.form.get('date')
+
+    if request.is_json:
+        data = request.get_json()
+        category = data.get('category', '').strip()
+        amount = float(data.get('amount', 0))
+        tx_type = data.get('type', 'expense').strip().lower()
+        date_str = data.get('date')
+    else:
+        category = request.form.get('category', '').strip()
+        amount = float(request.form.get('amount', 0))
+        tx_type = request.form.get('type', 'expense').strip().lower()
+        date_str = request.form.get('date')
+
+    transaction.category = category[:50]
+    transaction.amount = amount
+    transaction.type = tx_type if tx_type in ['income', 'expense'] else 'expense'
     if date_str:
         try:
             transaction.date = datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
             pass
     db.session.commit()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return jsonify({'success': True, 'id': id})
     return redirect(url_for('index'))
 
-# Analysis Route for transaction graphs
+# Analysis Route
 @app.route('/analysis', endpoint='analysis')
 @login_required
 def analysis():
-    graph_type = request.args.get('graph', 'overall')
-    transactions = Transaction.query.filter_by(user_id=current_user.id).all()
-    
-    if not transactions:
-        return render_template('analysis.html', msg="No transactions available for analysis", username=current_user.username)
-    
-    if graph_type == 'month':
-        data = [{
-            'date': t.date,
-            'amount': t.amount,
-            'type': t.type,
-            'category': t.category
-        } for t in transactions]
-        df = pd.DataFrame(data)
-        df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.strftime('%Y-%m')
-        
-        # Get selected month; default to current month if not provided.
-        selected_month = request.args.get('selected_month', datetime.now().strftime('%Y-%m'))
-        # Filter expense transactions for the selected month.
-        df_month = df[(df['type'] == 'expense') & (df['month'] == selected_month)]
-        monthly_category_data = df_month.groupby('category')['amount'].sum().to_dict()
-        
-        # Determine selected category for the yearly line graph.
-        selected_category = request.args.get('selected_category')
-        if not selected_category and monthly_category_data:
-            selected_category = list(monthly_category_data.keys())[0]
-        
-        # For the line graph: get expense transactions for the selected category in the current year.
-        current_year = datetime.now().year
-        df_year = df[(df['type'] == 'expense') & (df['date'].dt.year == current_year)]
-        if selected_category:
-            df_category = df_year[df_year['category'] == selected_category].copy()
-            df_category['month'] = df_category['date'].dt.strftime('%Y-%m')
-            all_months = pd.date_range(f'{current_year}-01-01', f'{current_year}-12-01', freq='MS').strftime('%Y-%m')
-            yearly_data = df_category.groupby('month')['amount'].sum().reindex(all_months, fill_value=0)
-            monthly_labels = list(yearly_data.index)
-            monthly_values = list(yearly_data.values)
-        else:
-            monthly_labels = []
-            monthly_values = []
-        
-        return render_template('analysis.html',
-                            username=current_user.username,
-                            graph_type='month',
-                            selected_month=selected_month,
-                            monthly_category_data=monthly_category_data,
-                            selected_category=selected_category,
-                            monthly_labels=monthly_labels,
-                            monthly_values=monthly_values)
-    else:
-        # Overall analysis
-        total_income = sum(t.amount for t in transactions if t.type == 'income')
-        total_expense = sum(t.amount for t in transactions if t.type == 'expense')
-        expense_categories = {}
-        for t in transactions:
-            if t.type == 'expense':
-                expense_categories[t.category] = expense_categories.get(t.category, 0) + t.amount
-        
-        return render_template('analysis.html',
-                               username=current_user.username,
-                               graph_type='overall',
-                               total_income=total_income,
-                               total_expense=total_expense,
-                               expense_categories=expense_categories)
+    return render_template('analysis.html', username=current_user.username)
 
-                               
-# API Route for transactions
+# API Route: Analytics Data Endpoint
+@app.route('/api/analysis/data', methods=['GET'])
+@login_required
+def api_analysis_data():
+    from api.analytics import get_analytics_data
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    categories = request.args.getlist('categories[]')
+    if not categories and request.args.get('categories'):
+        categories = [c.strip() for c in request.args.get('categories').split(',') if c.strip()]
+    tx_type = request.args.get('type', 'all')
+    compare_m1 = request.args.get('compare_m1')
+    compare_m2 = request.args.get('compare_m2')
+
+    data = get_analytics_data(
+        db=db,
+        user_id=current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+        categories=categories,
+        tx_type=tx_type,
+        compare_m1=compare_m1,
+        compare_m2=compare_m2
+    )
+    return jsonify(data)
+
+# API Route: Analytics Categories
+@app.route('/api/analysis/categories', methods=['GET'])
+@login_required
+def api_analysis_categories():
+    from api.analytics import get_analytics_categories
+    categories = get_analytics_categories(db, current_user.id)
+    return jsonify(categories)
+
+# API Route: Paginated Transactions for Dashboard
+@app.route('/api/transactions/paginated', methods=['GET'])
+@login_required
+def get_paginated_transactions():
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+    except (ValueError, TypeError):
+        page = 1
+
+    try:
+        per_page = int(request.args.get('per_page', 20))
+        if per_page not in [10, 20, 50, 100]:
+            per_page = 20
+    except (ValueError, TypeError):
+        per_page = 20
+
+    search = request.args.get('search', '').strip()
+    tx_type = request.args.get('type', 'all').strip().lower()
+    category = request.args.get('category', '').strip()
+
+    conditions = ["user_id = :user_id"]
+    params = {'user_id': current_user.id}
+
+    if search:
+        conditions.append("LOWER(category) LIKE :search")
+        params['search'] = f"%{search.lower()}%"
+
+    if tx_type in ['income', 'expense']:
+        conditions.append("type = :tx_type")
+        params['tx_type'] = tx_type
+
+    if category:
+        conditions.append("category = :category")
+        params['category'] = category
+
+    where_sql = " AND ".join(conditions)
+
+    # 1. Total filtered records
+    count_query = text(f"SELECT COUNT(*) FROM transactions WHERE {where_sql}")
+    total_count = db.session.execute(count_query, params).scalar() or 0
+
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    if page > total_pages and total_count > 0:
+        page = total_pages
+
+    offset = (page - 1) * per_page
+    params['limit'] = per_page
+    params['offset'] = offset
+
+    # 2. Paginated rows with consistent tie-breaking ordering: date DESC, id DESC
+    dialect = db.session.get_bind().dialect.name
+    date_fmt = "to_char(date, 'YYYY-MM-DD')" if dialect == 'postgresql' else "strftime('%Y-%m-%d', date)"
+
+    rows_query = text(f"""
+        SELECT id, {date_fmt} AS date_str, category, amount, type
+        FROM transactions
+        WHERE {where_sql}
+        ORDER BY date DESC, id DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    rows = db.session.execute(rows_query, params).fetchall()
+
+    tx_list = [{
+        'id': r[0],
+        'date': str(r[1]),
+        'category': r[2],
+        'amount': float(r[3]),
+        'type': r[4]
+    } for r in rows]
+
+    # 3. Global Dashboard Totals (across ALL records for this user)
+    global_query = text("""
+        SELECT
+            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0) AS balance,
+            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
+            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense,
+            COUNT(*) AS total_records
+        FROM transactions
+        WHERE user_id = :user_id
+    """)
+    global_row = db.session.execute(global_query, {'user_id': current_user.id}).fetchone()
+
+    return jsonify({
+        'transactions': tx_list,
+        'page': page,
+        'per_page': per_page,
+        'total_count': total_count,
+        'total_pages': total_pages,
+        'global_balance': round(float(global_row[0]), 2),
+        'global_income': round(float(global_row[1]), 2),
+        'global_expense': round(float(global_row[2]), 2),
+        'total_records': int(global_row[3])
+    })
+
+# API Route for transactions (backward-compatible)
 @app.route('/api/transactions', methods=['GET'])
 @login_required
 def get_transactions():
     transactions = db.session.execute(
-        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC'),
+        text('SELECT * FROM "transactions" WHERE user_id = :user_id ORDER BY date DESC, id DESC'),
         {'user_id': current_user.id}
     ).fetchall()
     transactions_list = [{

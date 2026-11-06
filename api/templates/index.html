@@ -180,7 +180,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 pb-3 border-bottom border-secondary border-opacity-25">
         <div>
           <span class="text-uppercase small fw-bold text-secondary" style="letter-spacing: 0.08em;">Total Balance</span>
-          <div class="balance-highlight fs-2 fw-bolder mt-0.5">₹{{ balance }}</div>
+          <div class="balance-highlight fs-2 fw-bolder mt-0.5" id="globalBalanceDisplay">₹{{ balance }}</div>
         </div>
         
         <!-- Entry Mode Switcher Pills -->
@@ -358,60 +358,83 @@
       </form>
     </div>
     
-    <!-- Toggle Button for View Mode -->
-    <div class="btn-group mb-4 view-toggle" role="group">
-      <button type="button" class="btn btn-outline-primary active" id="tableViewToggle"><i class="bi bi-table"></i> Table View</button>
-      <button type="button" class="btn btn-outline-primary" id="cardViewToggle"><i class="bi bi-grid-3x3-gap"></i> Cards View</button>
+    <!-- Transactions Section Toolbar: Search, Filters, Rows, View Mode -->
+    <div class="card p-3 mb-3 border-0 shadow-sm" style="background: rgba(139, 92, 246, 0.04); border: 1px solid rgba(139, 92, 246, 0.18) !important;">
+      <div class="row g-2 align-items-center">
+        <!-- Search Input -->
+        <div class="col-12 col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-body-tertiary border-end-0 text-secondary">
+              <i class="bi bi-search"></i>
+            </span>
+            <input type="text" id="txSearchInput" class="form-control form-control-sm border-start-0 ps-0" placeholder="Search category...">
+            <button class="btn btn-sm btn-outline-secondary border-start-0" type="button" id="clearSearchBtn" style="display:none;" title="Clear search">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Type Filter -->
+        <div class="col-6 col-md-2">
+          <select id="txTypeFilter" class="form-select form-select-sm">
+            <option value="all">All Types</option>
+            <option value="expense">💸 Expense</option>
+            <option value="income">💰 Income</option>
+          </select>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="col-6 col-md-3">
+          <select id="txCategoryFilter" class="form-select form-select-sm">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+
+        <!-- Per Page Selector & View Toggle -->
+        <div class="col-12 col-md-3 d-flex align-items-center justify-content-between justify-content-md-end gap-2">
+          <div class="d-flex align-items-center gap-1">
+            <label for="txPerPageSelect" class="small text-secondary text-nowrap mb-0">Show:</label>
+            <select id="txPerPageSelect" class="form-select form-select-sm" style="width: 72px;">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="btn-group btn-group-sm view-toggle" role="group">
+            <button type="button" class="btn btn-outline-primary active" id="tableViewToggle" title="Table View">
+              <i class="bi bi-table"></i>
+            </button>
+            <button type="button" class="btn btn-outline-primary" id="cardViewToggle" title="Cards View">
+              <i class="bi bi-grid-3x3-gap"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- Table View for Transactions -->
     <div id="tableView">
-      <div class="card p-3">
+      <div class="card p-0 overflow-hidden border-0 shadow-sm" style="border: 1px solid rgba(139, 92, 246, 0.2) !important;">
         <div class="table-responsive">
-          <table class="table table-striped mb-0">
-            <thead>
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
               <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Type</th>
-                <th>Action</th>
+                <th style="width: 18%;">Date</th>
+                <th style="width: 32%;">Category</th>
+                <th style="width: 20%;">Amount</th>
+                <th style="width: 15%;">Type</th>
+                <th style="width: 15%;" class="text-end pe-3">Action</th>
               </tr>
             </thead>
-            <tbody>
-              {% for transaction in transactions %}
+            <tbody id="transactionsTableBody">
               <tr>
-                <td>{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}</td>
-                <td><span class="fw-medium">{{ transaction.category }}</span></td>
-                <td class="fw-bold">{{ '₹' + transaction.amount|string }}</td>
-                <td>
-                  {% if transaction.type == 'income' %}
-                    <span class="badge bg-success bg-opacity-75">Income</span>
-                  {% else %}
-                    <span class="badge bg-danger bg-opacity-75">Expense</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline-primary edit-btn"
-                          data-id="{{ transaction.id }}"
-                          data-date="{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}"
-                          data-category="{{ transaction.category }}"
-                          data-amount="{{ transaction.amount }}"
-                          data-type="{{ transaction.type }}">
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-                  <form action="{{ url_for('delete_transaction', id=transaction.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this transaction?');">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </form>
+                <td colspan="5" class="text-center text-muted py-4">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                  Loading transactions...
                 </td>
               </tr>
-              {% else %}
-              <tr>
-                <td colspan="5" class="text-center text-muted py-4">No transactions found. Log your first transaction above!</td>
-              </tr>
-              {% endfor %}
             </tbody>
           </table>
         </div>
@@ -420,41 +443,24 @@
     
     <!-- Card View for Transactions -->
     <div id="cardView" style="display: none;">
-      {% for transaction in transactions %}
-      <div class="card mb-3">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h5 class="mb-1 fw-bold">{{ transaction.category }}</h5>
-              <p class="text-muted small mb-0">{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}</p>
-            </div>
-            <div class="text-end">
-              <h5 class="mb-1 fw-bold {{ 'text-success' if transaction.type == 'income' else 'text-danger' }}">
-                {{ '+' if transaction.type == 'income' else '-' }}₹{{ transaction.amount }}
-              </h5>
-              <span class="badge {{ 'bg-success' if transaction.type == 'income' else 'bg-danger' }} bg-opacity-75">
-                {{ transaction.type|capitalize }}
-              </span>
-            </div>
-          </div>
-          <div class="mt-3 text-end border-top pt-2">
-            <button class="btn btn-sm btn-outline-primary edit-btn"
-                    data-id="{{ transaction.id }}"
-                    data-date="{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}"
-                    data-category="{{ transaction.category }}"
-                    data-amount="{{ transaction.amount }}"
-                    data-type="{{ transaction.type }}">
-              Edit
-            </button>
-            <form action="{{ url_for('delete_transaction', id=transaction.id) }}" method="POST" style="display:inline;">
-              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this transaction?');">
-                Delete
-              </button>
-            </form>
-          </div>
+      <div id="transactionsCardsContainer">
+        <div class="card p-4 text-center text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+          Loading transactions...
         </div>
       </div>
-      {% endfor %}
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 flex-wrap gap-2" id="paginationControls">
+      <div class="small text-secondary" id="paginationSummary">
+        Showing <span id="startRange" class="fw-semibold text-light">0</span>–<span id="endRange" class="fw-semibold text-light">0</span> of <span id="totalRecords" class="fw-semibold text-light">0</span> transactions
+      </div>
+      <nav aria-label="Transaction pagination">
+        <ul class="pagination pagination-sm mb-0 gap-1" id="paginationList">
+          <!-- Dynamically populated via JS -->
+        </ul>
+      </nav>
     </div>
   </div>
 
@@ -466,8 +472,9 @@
           <h5 class="modal-title" id="editModalLabel">Edit Transaction</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form id="editForm" method="POST">
+        <form id="editForm">
           <div class="modal-body">
+            <input type="hidden" id="editId">
             <div class="mb-3">
               <label for="editDate" class="form-label">Date</label>
               <input type="date" class="form-control" id="editDate" name="date" required>
@@ -490,7 +497,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="submit" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
           </div>
         </form>
       </div>
@@ -499,6 +506,23 @@
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Helper to escape HTML strings safely
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Currency formatter
+    function formatCurrency(val) {
+      const num = Number(val) || 0;
+      return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     // Toggle view functionality
     document.getElementById('tableViewToggle').addEventListener('click', function() {
       document.getElementById('tableView').style.display = 'block';
@@ -529,23 +553,436 @@
         this.classList.add("selected");
       });
     });
-    
-    // Edit modal functionality
-    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    document.querySelectorAll('.edit-btn').forEach((btn) => {
-      btn.addEventListener('click', function () {
-        const id = this.getAttribute('data-id');
-        const date = this.getAttribute('data-date');
-        const category = this.getAttribute('data-category');
-        const amount = this.getAttribute('data-amount');
-        const type = this.getAttribute('data-type');
-        document.getElementById('editDate').value = date;
-        document.getElementById('editAmount').value = amount;
-        document.getElementById('editCategory').value = category;
-        document.getElementById('editType').value = type;
-        document.getElementById('editForm').action = '/edit/' + id;
-        editModal.show();
+
+    // ==========================================
+    // Server-Side Paginated Transactions Engine
+    // ==========================================
+    const txState = {
+      page: 1,
+      perPage: 20,
+      search: '',
+      type: 'all',
+      category: '',
+      totalPages: 1,
+      totalCount: 0
+    };
+
+    const tableBody = document.getElementById('transactionsTableBody');
+    const cardsContainer = document.getElementById('transactionsCardsContainer');
+    const paginationList = document.getElementById('paginationList');
+    const startRangeEl = document.getElementById('startRange');
+    const endRangeEl = document.getElementById('endRange');
+    const totalRecordsEl = document.getElementById('totalRecords');
+    const globalBalanceDisplay = document.getElementById('globalBalanceDisplay');
+
+    // Fetch and render transactions for current state
+    async function loadTransactions(targetPage = null) {
+      if (targetPage !== null) {
+        txState.page = targetPage;
+      }
+
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+            Loading transactions...
+          </td>
+        </tr>
+      `;
+      cardsContainer.innerHTML = `
+        <div class="card p-4 text-center text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+          Loading transactions...
+        </div>
+      `;
+
+      try {
+        const params = new URLSearchParams({
+          page: txState.page,
+          per_page: txState.perPage,
+          type: txState.type,
+          search: txState.search,
+          category: txState.category
+        });
+
+        const res = await fetch(`/api/transactions/paginated?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed to fetch transactions');
+        const data = await res.json();
+
+        txState.page = data.page;
+        txState.perPage = data.per_page;
+        txState.totalPages = data.total_pages;
+        txState.totalCount = data.total_count;
+
+        // Update global balance if provided
+        if (data.global_balance !== undefined && globalBalanceDisplay) {
+          globalBalanceDisplay.textContent = formatCurrency(data.global_balance);
+        }
+
+        renderTable(data.transactions);
+        renderCards(data.transactions);
+        renderPagination(data.page, data.total_pages, data.total_count, data.per_page);
+
+      } catch (err) {
+        console.error('Error loading paginated transactions:', err);
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center text-danger py-4">
+              <i class="bi bi-exclamation-triangle me-1"></i> Failed to load transactions. Please try refreshing.
+            </td>
+          </tr>
+        `;
+        cardsContainer.innerHTML = `
+          <div class="card p-4 text-center text-danger">
+            <i class="bi bi-exclamation-triangle me-1"></i> Failed to load transactions.
+          </div>
+        `;
+      }
+    }
+
+    // Render Table View Rows
+    function renderTable(transactions) {
+      if (!transactions || transactions.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+              No transactions found matching your criteria.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = transactions.map(tx => `
+        <tr class="tx-row" id="tx-row-${tx.id}">
+          <td class="text-secondary small font-monospace">${escapeHtml(tx.date)}</td>
+          <td><span class="fw-semibold">${escapeHtml(tx.category)}</span></td>
+          <td class="fw-bold ${tx.type === 'income' ? 'text-success' : ''}">${formatCurrency(tx.amount)}</td>
+          <td>
+            <span class="badge ${tx.type === 'income' ? 'bg-success' : 'bg-danger'} bg-opacity-75">
+              ${tx.type === 'income' ? 'Income' : 'Expense'}
+            </span>
+          </td>
+          <td class="text-end pe-3">
+            <button type="button" class="btn btn-sm btn-outline-primary me-1 px-2 py-0.5 rounded-pill edit-btn"
+                    data-id="${tx.id}"
+                    data-date="${escapeHtml(tx.date)}"
+                    data-category="${escapeHtml(tx.category)}"
+                    data-amount="${tx.amount}"
+                    data-type="${tx.type}"
+                    title="Edit transaction">
+              <i class="bi bi-pencil-square"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger px-2 py-0.5 rounded-pill delete-btn"
+                    data-id="${tx.id}"
+                    title="Delete transaction">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      attachActionListeners();
+    }
+
+    // Render Card View Items
+    function renderCards(transactions) {
+      if (!transactions || transactions.length === 0) {
+        cardsContainer.innerHTML = `
+          <div class="card p-5 text-center text-muted">
+            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+            No transactions found matching your criteria.
+          </div>
+        `;
+        return;
+      }
+
+      cardsContainer.innerHTML = transactions.map(tx => `
+        <div class="card mb-2 tx-card" id="tx-card-${tx.id}">
+          <div class="card-body py-3 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-0 fw-bold">${escapeHtml(tx.category)}</h6>
+                <span class="text-secondary small font-monospace">${escapeHtml(tx.date)}</span>
+              </div>
+              <div class="text-end">
+                <span class="fs-6 fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">
+                  ${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount)}
+                </span>
+                <span class="badge ${tx.type === 'income' ? 'bg-success' : 'bg-danger'} bg-opacity-75 ms-1">
+                  ${tx.type === 'income' ? 'Income' : 'Expense'}
+                </span>
+              </div>
+            </div>
+            <div class="mt-2 text-end border-top border-secondary border-opacity-10 pt-2">
+              <button type="button" class="btn btn-sm btn-outline-primary px-3 rounded-pill edit-btn"
+                      data-id="${tx.id}"
+                      data-date="${escapeHtml(tx.date)}"
+                      data-category="${escapeHtml(tx.category)}"
+                      data-amount="${tx.amount}"
+                      data-type="${tx.type}">
+                <i class="bi bi-pencil-square me-1"></i> Edit
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger px-3 rounded-pill delete-btn"
+                      data-id="${tx.id}">
+                <i class="bi bi-trash me-1"></i> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      attachActionListeners();
+    }
+
+    // Render Pagination Controls with Ellipsis
+    function renderPagination(page, totalPages, totalCount, perPage) {
+      if (totalCount === 0) {
+        startRangeEl.textContent = '0';
+        endRangeEl.textContent = '0';
+        totalRecordsEl.textContent = '0';
+        paginationList.innerHTML = '';
+        return;
+      }
+
+      const start = (page - 1) * perPage + 1;
+      const end = Math.min(page * perPage, totalCount);
+      startRangeEl.textContent = start.toLocaleString();
+      endRangeEl.textContent = end.toLocaleString();
+      totalRecordsEl.textContent = totalCount.toLocaleString();
+
+      if (totalPages <= 1) {
+        paginationList.innerHTML = '';
+        return;
+      }
+
+      // Compute page pills with ellipsis
+      const pages = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        if (page <= 4) {
+          pages.push(1, 2, 3, 4, 5, '...', totalPages);
+        } else if (page >= totalPages - 3) {
+          pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        } else {
+          pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+        }
+      }
+
+      let html = '';
+
+      // First & Prev buttons
+      html += `
+        <li class="page-item ${page === 1 ? 'disabled' : ''}">
+          <button class="page-link rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="loadTransactions(1)" title="First Page" ${page === 1 ? 'disabled' : ''}>
+            <i class="bi bi-chevron-double-left" style="font-size: 0.75rem;"></i>
+          </button>
+        </li>
+        <li class="page-item ${page === 1 ? 'disabled' : ''}">
+          <button class="page-link rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="loadTransactions(${page - 1})" title="Previous Page" ${page === 1 ? 'disabled' : ''}>
+            <i class="bi bi-chevron-left" style="font-size: 0.75rem;"></i>
+          </button>
+        </li>
+      `;
+
+      // Numbered items
+      pages.forEach(p => {
+        if (p === '...') {
+          html += `
+            <li class="page-item disabled">
+              <span class="page-link border-0 bg-transparent px-2" style="line-height: 32px;">...</span>
+            </li>
+          `;
+        } else {
+          const isActive = (p === page);
+          html += `
+            <li class="page-item ${isActive ? 'active' : ''}">
+              <button class="page-link rounded-circle p-0 d-flex align-items-center justify-content-center ${isActive ? 'fw-bold' : ''}" style="width: 32px; height: 32px;" onclick="loadTransactions(${p})">
+                ${p}
+              </button>
+            </li>
+          `;
+        }
       });
+
+      // Next & Last buttons
+      html += `
+        <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+          <button class="page-link rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="loadTransactions(${page + 1})" title="Next Page" ${page === totalPages ? 'disabled' : ''}>
+            <i class="bi bi-chevron-right" style="font-size: 0.75rem;"></i>
+          </button>
+        </li>
+        <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+          <button class="page-link rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="loadTransactions(${totalPages})" title="Last Page" ${page === totalPages ? 'disabled' : ''}>
+            <i class="bi bi-chevron-double-right" style="font-size: 0.75rem;"></i>
+          </button>
+        </li>
+      `;
+
+      paginationList.innerHTML = html;
+    }
+
+    // Attach listeners for Edit and Delete buttons
+    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const editForm = document.getElementById('editForm');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+
+    function attachActionListeners() {
+      // Edit button click
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.onclick = function() {
+          const id = this.getAttribute('data-id');
+          const date = this.getAttribute('data-date');
+          const category = this.getAttribute('data-category');
+          const amount = this.getAttribute('data-amount');
+          const type = this.getAttribute('data-type');
+
+          document.getElementById('editId').value = id;
+          document.getElementById('editDate').value = date;
+          document.getElementById('editAmount').value = amount;
+          document.getElementById('editCategory').value = category;
+          document.getElementById('editType').value = type;
+
+          editModal.show();
+        };
+      });
+
+      // Delete button click
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.onclick = async function() {
+          const id = this.getAttribute('data-id');
+          if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+          try {
+            const res = await fetch(`/delete/${id}`, {
+              method: 'POST',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            });
+            if (res.ok) {
+              const rowCount = document.querySelectorAll('#transactionsTableBody tr.tx-row').length;
+              if (rowCount <= 1 && txState.page > 1) {
+                txState.page -= 1;
+              }
+              loadTransactions(txState.page);
+            } else {
+              alert('Failed to delete transaction. Please try again.');
+            }
+          } catch (err) {
+            console.error('Delete error:', err);
+            alert('An error occurred while deleting.');
+          }
+        };
+      });
+    }
+
+    // Edit form submission via AJAX
+    editForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const id = document.getElementById('editId').value;
+      const payload = {
+        date: document.getElementById('editDate').value,
+        amount: parseFloat(document.getElementById('editAmount').value),
+        category: document.getElementById('editCategory').value.trim(),
+        type: document.getElementById('editType').value
+      };
+
+      saveEditBtn.disabled = true;
+      saveEditBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+      try {
+        const res = await fetch(`/edit/${id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          editModal.hide();
+          loadTransactions(txState.page);
+        } else {
+          alert('Failed to update transaction.');
+        }
+      } catch (err) {
+        console.error('Edit error:', err);
+        alert('An error occurred while saving.');
+      } finally {
+        saveEditBtn.disabled = false;
+        saveEditBtn.textContent = 'Save Changes';
+      }
+    });
+
+    // Search filter with debouncing
+    let searchDebounce = null;
+    const searchInput = document.getElementById('txSearchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+    searchInput.addEventListener('input', function() {
+      const val = this.value.trim();
+      clearSearchBtn.style.display = val ? 'inline-block' : 'none';
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        txState.search = val;
+        loadTransactions(1);
+      }, 300);
+    });
+
+    clearSearchBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      this.style.display = 'none';
+      txState.search = '';
+      loadTransactions(1);
+    });
+
+    // Type filter
+    document.getElementById('txTypeFilter').addEventListener('change', function() {
+      txState.type = this.value;
+      loadTransactions(1);
+    });
+
+    // Category filter
+    const categoryFilter = document.getElementById('txCategoryFilter');
+    categoryFilter.addEventListener('change', function() {
+      txState.category = this.value;
+      loadTransactions(1);
+    });
+
+    // Per Page selector
+    document.getElementById('txPerPageSelect').addEventListener('change', function() {
+      txState.perPage = parseInt(this.value, 10) || 20;
+      loadTransactions(1);
+    });
+
+    // Populate Category filter from API
+    async function initCategoryFilter() {
+      try {
+        const res = await fetch('/api/analysis/categories');
+        if (res.ok) {
+          const cats = await res.json();
+          if (Array.isArray(cats)) {
+            cats.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c;
+              opt.textContent = c;
+              categoryFilter.appendChild(opt);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load categories for filter:', e);
+      }
+    }
+
+    // Initialize on page ready
+    document.addEventListener('DOMContentLoaded', () => {
+      initCategoryFilter();
+      loadTransactions(1);
     });
 
     // ==========================================
